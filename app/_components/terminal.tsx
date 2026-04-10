@@ -562,7 +562,12 @@ function MaxilarContent() {
 function SyntaxContent({
   onImageClick,
 }: {
-  onImageClick: (src: string, alt: string) => void;
+  onImageClick: (info: {
+    src: string;
+    alt: string;
+    label: string;
+    size: string;
+  }) => void;
 }) {
   const theme = THEMES.syntax;
   return (
@@ -623,7 +628,12 @@ function SyntaxContent({
             size="1.6mb"
             src="/syntax-01.png"
             onClick={() =>
-              onImageClick("/syntax-01.png", "syntax.catafract.com landing page")
+              onImageClick({
+                src: "/syntax-01.png",
+                alt: "syntax.catafract.com landing page",
+                label: "01 / syntax — landing.png",
+                size: "1.6mb",
+              })
             }
           />
         }
@@ -694,10 +704,14 @@ function InmobaContent() {
 function ImageModal({
   src,
   alt,
+  label,
+  size,
   onClose,
 }: {
   src: string;
   alt: string;
+  label?: string;
+  size?: string;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -722,53 +736,101 @@ function ImageModal({
       style={{
         position: "fixed",
         inset: 0,
-        backgroundColor: "rgba(40, 40, 40, 0.88)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
+        backgroundColor: "#000000",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         zIndex: 1000,
         cursor: "zoom-out",
-        padding: 40,
+        padding: 60,
       }}
     >
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close"
-        style={{
-          position: "absolute",
-          top: 24,
-          right: 24,
-          width: 40,
-          height: 40,
-          borderRadius: "50%",
-          backgroundColor: "rgba(255,255,255,0.08)",
-          border: "1px solid rgba(255,255,255,0.15)",
-          color: "#FFFFFF",
-          fontSize: 18,
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        ✕
-      </button>
-      <img
-        src={src}
-        alt={alt}
+      <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          maxWidth: "min(1400px, 92vw)",
-          maxHeight: "88vh",
-          borderRadius: 12,
-          boxShadow: "0 30px 80px rgba(0,0,0,0.7)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          gap: 18,
+          width: "min(1120px, 92vw)",
           cursor: "default",
-          display: "block",
         }}
-      />
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 12,
+              letterSpacing: "0.2px",
+            }}
+          >
+            <span style={{ color: "#666666" }}>{label ?? alt}</span>
+            {size && (
+              <>
+                <span style={{ color: "#333333" }}>·</span>
+                <span style={{ color: "#555555" }}>{size}</span>
+              </>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: "#0E0E10",
+              border: "1px solid #1C1C20",
+              color: "#888888",
+              fontSize: 13,
+              fontWeight: 500,
+              lineHeight: 1,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            width: "100%",
+            backgroundColor: "#050507",
+            border: "1px solid #141418",
+            borderRadius: 10,
+            overflow: "hidden",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <img
+            src={src}
+            alt={alt}
+            style={{
+              display: "block",
+              width: "100%",
+              height: "auto",
+              maxHeight: "calc(100vh - 180px)",
+              objectFit: "contain",
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -777,7 +839,12 @@ function ImageModal({
 
 export function Terminal() {
   const [activeTab, setActiveTab] = useState<TabKey>("maxilar");
-  const [modal, setModal] = useState<{ src: string; alt: string } | null>(null);
+  const [modal, setModal] = useState<{
+    src: string;
+    alt: string;
+    label: string;
+    size: string;
+  } | null>(null);
 
   return (
     <>
@@ -794,9 +861,7 @@ export function Terminal() {
         <TabBar activeTab={activeTab} onChange={setActiveTab} />
         {activeTab === "maxilar" && <MaxilarContent />}
         {activeTab === "syntax" && (
-          <SyntaxContent
-            onImageClick={(src, alt) => setModal({ src, alt })}
-          />
+          <SyntaxContent onImageClick={(info) => setModal(info)} />
         )}
         {activeTab === "inmoba" && <InmobaContent />}
       </div>
@@ -804,6 +869,8 @@ export function Terminal() {
         <ImageModal
           src={modal.src}
           alt={modal.alt}
+          label={modal.label}
+          size={modal.size}
           onClose={() => setModal(null)}
         />
       )}
