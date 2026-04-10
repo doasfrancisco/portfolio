@@ -5,13 +5,14 @@ import { ImageTile, MockupGallery } from "./mockups";
 
 const mono: CSSProperties = { fontFamily: "var(--font-mono), monospace" };
 
-type TabKey = "maxilar" | "syntax" | "inmoba" | "damelo";
+type TabKey = "maxilar" | "syntax" | "inmoba" | "damelo" | "doctoc";
 
 const TAB_ORDER: readonly TabKey[] = [
   "maxilar",
   "syntax",
   "inmoba",
   "damelo",
+  "doctoc",
 ] as const;
 
 type Theme = {
@@ -61,15 +62,26 @@ const THEMES: Record<TabKey, Theme> = {
     status: { label: "● live", color: "#F59E0B" },
   },
   damelo: {
+    accent: "#A3A3A3",
+    activeBg: "#161618",
+    activeBadgeBg: "#0A0A0B",
+    activeBadgeBorder: "#333336",
+    inactiveDot: "#333336",
+    host: "catafract@d.sh",
+    domain: "damelo.sh",
+    commits: 71,
+    status: { label: "● open source", color: "#A3A3A3" },
+  },
+  doctoc: {
     accent: "#4EC86C",
     activeBg: "#0E1B12",
     activeBadgeBg: "#050A07",
     activeBadgeBorder: "#1C3A22",
     inactiveDot: "#1F3A28",
-    host: "catafract@damelo",
-    domain: "damelo.sh",
-    commits: 71,
-    status: { label: "● open source", color: "#4EC86C" },
+    host: "catafract@doctoc",
+    domain: "doctoc.health",
+    commits: 216,
+    status: { label: "● fhir r4", color: "#4EC86C" },
   },
 };
 
@@ -341,7 +353,7 @@ function TabButton({
           lineHeight: "16px",
         }}
       >
-        {tab}
+        {tab === "damelo" ? "d.sh" : tab}
       </span>
       <div
         style={{
@@ -442,6 +454,11 @@ function TabBar({
         tab="damelo"
         active={activeTab === "damelo"}
         onClick={() => onChange("damelo")}
+      />
+      <TabButton
+        tab="doctoc"
+        active={activeTab === "doctoc"}
+        onClick={() => onChange("doctoc")}
       />
       <div style={{ flexGrow: 1 }} />
       <span style={{ ...mono, color: "#1A1A1A", fontSize: 11, lineHeight: "14px" }}>
@@ -564,12 +581,12 @@ function MaxilarContent() {
             msg: "feat: hand off accounts to doctoc, archive infra",
           },
           {
-            hash: "5d3c7b1",
-            msg: "feat: hl7 fhir adapter syncs clinical records into doctoc",
-          },
-          {
             hash: "3d9b144",
             msg: "feat: scheduling agent now covers 12 clinics across lima",
+          },
+          {
+            hash: "8e41a0b",
+            msg: "fix: intake flow drops fewer leads after reminder rewrite",
           },
           {
             hash: "1c5ff20",
@@ -751,7 +768,7 @@ function DameloContent() {
         <Pipe />
         <MetaItem k="stack" v="mcp · claude code" />
         <Pipe />
-        <MetaItem k="status" v="open source · live" color="#4EC86C" />
+        <MetaItem k="status" v="open source · live" color="#A3A3A3" />
         <Pipe />
         <MetaItem k="dates" v="mar 2026 — now" />
       </Metadata>
@@ -773,6 +790,64 @@ function DameloContent() {
           {
             hash: "0a0c101",
             msg: "chore: initial commit — mcp server + export pipeline",
+          },
+        ]}
+      />
+      <GallerySection theme={theme} />
+      <FooterRow theme={theme} />
+    </div>
+  );
+}
+
+function DoctocContent() {
+  const theme = THEMES.doctoc;
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        paddingBlock: 28,
+        paddingInline: 32,
+      }}
+    >
+      <Prompt cmd="cat about.md" theme={theme} />
+      <Heading>HL7 FHIR compliance for Latin American EHRs.</Heading>
+      <Description>
+        After Maxilar was acquired, the same team rebuilt Doctoc&apos;s clinical
+        data layer to be fully HL7 FHIR R4 compliant — patient, encounter,
+        observation, medication and diagnostic resources all map to the
+        standard so records move cleanly between clinics, insurers, and labs.
+        Doctoc is the AI-powered EHR saving doctors 3+ hours a day across
+        LATAM; we made it the region&apos;s first FHIR-native option.
+      </Description>
+      <Metadata>
+        <MetaItem k="role" v="builders · post-exit" />
+        <Pipe />
+        <MetaItem k="scope" v="hl7 fhir r4" color="#4EC86C" />
+        <Pipe />
+        <MetaItem k="status" v="live · compliant" color="#4EC86C" />
+        <Pipe />
+        <MetaItem k="dates" v="feb 2026 — now" />
+      </Metadata>
+      <GitLog
+        theme={theme}
+        commits={[
+          {
+            hash: "5d3c7b1",
+            msg: "feat: patient + encounter + observation → fhir r4",
+          },
+          {
+            hash: "b2f9a06",
+            msg: "feat: medication request / dispense export to any hl7 endpoint",
+          },
+          {
+            hash: "77c3e11",
+            msg: "feat: bulk fhir export for payer and lab integrations",
+          },
+          {
+            hash: "30a118d",
+            msg: "chore: initial commit — fhir layer on top of doctoc ehr",
           },
         ]}
       />
@@ -948,6 +1023,7 @@ export function Terminal() {
         )}
         {activeTab === "inmoba" && <InmobaContent />}
         {activeTab === "damelo" && <DameloContent />}
+        {activeTab === "doctoc" && <DoctocContent />}
       </div>
       {modal && (
         <ImageModal
