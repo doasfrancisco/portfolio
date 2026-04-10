@@ -637,7 +637,88 @@ function Login() {
   );
 }
 
-export function MockupGallery() {
+export function ImageTile({
+  num,
+  filename,
+  size,
+  src,
+  onClick,
+}: {
+  num: string;
+  filename: string;
+  size: string;
+  src: string;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        width: 320,
+        flexShrink: 0,
+      }}
+    >
+      <button
+        onClick={onClick}
+        aria-label={`Open ${filename}`}
+        style={{
+          backgroundColor: "#0A1518",
+          border: "1px solid #1A3A3E",
+          borderRadius: 8,
+          height: 180,
+          padding: 0,
+          cursor: "zoom-in",
+          overflow: "hidden",
+          boxSizing: "border-box",
+          display: "block",
+          width: "100%",
+        }}
+      >
+        <img
+          src={src}
+          alt={filename}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+      </button>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          paddingInline: 4,
+        }}
+      >
+        <div style={{ ...mono, color: "#555555", fontSize: 10, lineHeight: "12px" }}>
+          {num}
+        </div>
+        <div
+          style={{
+            ...mono,
+            color: "#CCCCCC",
+            fontSize: 11,
+            fontWeight: 600,
+            lineHeight: "14px",
+          }}
+        >
+          {filename}
+        </div>
+        <div style={{ flexGrow: 1 }} />
+        <div style={{ ...mono, color: "#444444", fontSize: 10, lineHeight: "12px" }}>
+          {size}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function MockupGallery({ firstTile }: { firstTile?: ReactNode }) {
   return (
     <div
       style={{
@@ -647,7 +728,7 @@ export function MockupGallery() {
         paddingTop: 6,
       }}
     >
-      <Dashboard />
+      {firstTile ?? <Dashboard />}
       <Chat />
       <Schedule />
       <Intake />
