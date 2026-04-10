@@ -268,7 +268,7 @@ export function GraphCard() {
             { c: "#22D3EE", l: "maxilar" },
             { c: "#A78BFA", l: "syntax" },
             { c: "#F59E0B", l: "inmoba" },
-            { c: "#A3A3A3", l: "damelo" },
+            { c: "#A3A3A3", l: "d.sh" },
             { c: "#4EC86C", l: "doctoc" },
           ].map(({ c, l }) => (
             <div
