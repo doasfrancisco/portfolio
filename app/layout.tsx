@@ -13,10 +13,25 @@ const mono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+const siteTitle = "Catafract — AI-first software factory";
+const siteDescription =
+  "We build products from zero. Sold one, raised on another, shipping a few more right now.";
+
 export const metadata: Metadata = {
-  title: "Catafract — AI-first software factory",
-  description:
-    "We build products from zero. Sold one, raised on another, shipping a few more right now.",
+  title: siteTitle,
+  description: siteDescription,
+  openGraph: {
+    title: siteTitle,
+    description: siteDescription,
+    images: [{ url: "/logo.png" }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteTitle,
+    description: siteDescription,
+    images: ["/logo.png"],
+  },
 };
 
 export default function RootLayout({

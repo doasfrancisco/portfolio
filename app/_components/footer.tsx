@@ -38,7 +38,7 @@ export function Footer() {
         CATAFRACT.COM
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
-        <a href="https://twitter.com" style={linkStyle}>
+        <a href="https://x.com/doasfrancisco" style={linkStyle}>
           <svg
             width="18"
             height="18"
@@ -51,7 +51,7 @@ export function Footer() {
           </svg>
           Twitter
         </a>
-        <a href="https://github.com" style={linkStyle}>
+        <a href="https://github.com/doasfrancisco" style={linkStyle}>
           <svg
             width="18"
             height="18"
@@ -64,7 +64,7 @@ export function Footer() {
           </svg>
           GitHub
         </a>
-        <a href="https://linkedin.com" style={linkStyle}>
+        <a href="https://www.linkedin.com/in/cristhianagueroh/" style={linkStyle}>
           <svg
             width="18"
             height="18"

@@ -5,7 +5,14 @@ import { ImageTile, MockupGallery } from "./mockups";
 
 const mono: CSSProperties = { fontFamily: "var(--font-mono), monospace" };
 
-type TabKey = "maxilar" | "syntax" | "inmoba";
+type TabKey = "maxilar" | "syntax" | "inmoba" | "damelo";
+
+const TAB_ORDER: readonly TabKey[] = [
+  "maxilar",
+  "syntax",
+  "inmoba",
+  "damelo",
+] as const;
 
 type Theme = {
   accent: string;
@@ -49,9 +56,20 @@ const THEMES: Record<TabKey, Theme> = {
     activeBadgeBorder: "#5C4316",
     inactiveDot: "#5C4316",
     host: "catafract@inmoba",
-    domain: "inmoba.catafract.com",
-    commits: 37,
-    status: { label: "● building", color: "#F59E0B" },
+    domain: "inmoba.app",
+    commits: 94,
+    status: { label: "● live", color: "#F59E0B" },
+  },
+  damelo: {
+    accent: "#4EC86C",
+    activeBg: "#0E1B12",
+    activeBadgeBg: "#050A07",
+    activeBadgeBorder: "#1C3A22",
+    inactiveDot: "#1F3A28",
+    host: "catafract@damelo",
+    domain: "damelo.sh",
+    commits: 71,
+    status: { label: "● open source", color: "#4EC86C" },
   },
 };
 
@@ -286,7 +304,7 @@ function TabButton({
   onClick: () => void;
 }) {
   const theme = THEMES[tab];
-  const index = tab === "maxilar" ? 1 : tab === "syntax" ? 2 : 3;
+  const index = TAB_ORDER.indexOf(tab) + 1;
   return (
     <button
       type="button"
@@ -420,6 +438,11 @@ function TabBar({
         active={activeTab === "inmoba"}
         onClick={() => onChange("inmoba")}
       />
+      <TabButton
+        tab="damelo"
+        active={activeTab === "damelo"}
+        onClick={() => onChange("damelo")}
+      />
       <div style={{ flexGrow: 1 }} />
       <span style={{ ...mono, color: "#1A1A1A", fontSize: 11, lineHeight: "14px" }}>
         |
@@ -520,13 +543,14 @@ function MaxilarContent() {
       <Description>
         Maxilar built AI agents that sit inside dental practices — handling
         intake, scheduling, and follow-ups without the front desk breaking a
-        sweat. We raised $15K equity free, shipped for a year, and sold to
-        Doctoc in January.
+        sweat. Winners of Startup Peru, raised $15K equity free, shipped for a
+        year, and sold to Doctoc in January with a clean HL7 FHIR handoff of
+        every clinical record.
       </Description>
       <Metadata>
         <MetaItem k="role" v="co-founder · ceo" />
         <Pipe />
-        <MetaItem k="raised" v="$15k equity free" />
+        <MetaItem k="award" v="startup peru winner" color="#4EC86C" />
         <Pipe />
         <MetaItem k="exit" v="acquired by doctoc" color="#4EC86C" />
         <Pipe />
@@ -540,12 +564,12 @@ function MaxilarContent() {
             msg: "feat: hand off accounts to doctoc, archive infra",
           },
           {
-            hash: "3d9b144",
-            msg: "feat: scheduling agent now covers 12 clinics across lima",
+            hash: "5d3c7b1",
+            msg: "feat: hl7 fhir adapter syncs clinical records into doctoc",
           },
           {
-            hash: "8e41a0b",
-            msg: "fix: intake flow drops fewer leads after reminder rewrite",
+            hash: "3d9b144",
+            msg: "feat: scheduling agent now covers 12 clinics across lima",
           },
           {
             hash: "1c5ff20",
@@ -656,19 +680,20 @@ function InmobaContent() {
       }}
     >
       <Prompt cmd="cat about.md" theme={theme} />
-      <Heading>Real estate intelligence for Lima.</Heading>
+      <Heading>Property valuations in 60 seconds.</Heading>
       <Description>
-        Inmoba is a property feed plus AI valuation layer for the Peruvian
-        market — it pulls listings across the city, runs comps, and flags
-        under-priced deals before the humans notice. Bootstrapped, shipping
-        daily, and growing one zip code at a time.
+        Inmoba prices any property in the Peruvian market in under a minute.
+        Drop an address, the model pulls recent comps within a 500m radius and
+        spits out a full valuation report — the kind a bank or a realtor would
+        normally take days to produce. Live at inmoba.app, used by owners,
+        brokers, and anyone who needs a real number without the middleman.
       </Description>
       <Metadata>
         <MetaItem k="role" v="co-founder · builder" />
         <Pipe />
-        <MetaItem k="raised" v="bootstrapped" />
+        <MetaItem k="focus" v="tasación · 60s" />
         <Pipe />
-        <MetaItem k="status" v="shipping" color="#F59E0B" />
+        <MetaItem k="status" v="live · shipping" color="#F59E0B" />
         <Pipe />
         <MetaItem k="dates" v="feb 2026 — now" />
       </Metadata>
@@ -677,7 +702,7 @@ function InmobaContent() {
         commits={[
           {
             hash: "6c9f1a2",
-            msg: "feat: valuation model uses recent comps within 500m",
+            msg: "feat: valuation report in 60s — comps within 500m",
           },
           {
             hash: "41b0d8e",
@@ -685,11 +710,69 @@ function InmobaContent() {
           },
           {
             hash: "aa22d7f",
-            msg: "fix: dedupe listings that reposted with new photos",
+            msg: "feat: exportable pdf report for brokers and owners",
           },
           {
             hash: "00e1f10",
-            msg: "chore: initial commit — first underpriced deal found",
+            msg: "chore: initial commit — first address priced in <60s",
+          },
+        ]}
+      />
+      <GallerySection theme={theme} />
+      <FooterRow theme={theme} />
+    </div>
+  );
+}
+
+function DameloContent() {
+  const theme = THEMES.damelo;
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        paddingBlock: 28,
+        paddingInline: 32,
+      }}
+    >
+      <Prompt cmd="cat about.md" theme={theme} />
+      <Heading>Share your AI sessions with your team.</Heading>
+      <Description>
+        Damelo is an MCP server that exports, imports, and browses Claude Code
+        sessions across a whole organization. Talk to Claude in plain English
+        — &quot;export this to damelo&quot; — or run the <code>/tomalo</code>{" "}
+        slash command and it runs in the background while you keep shipping.
+        Nothing gets lost when a teammate debugs something tricky. Built for
+        teams that ship with AI.
+      </Description>
+      <Metadata>
+        <MetaItem k="role" v="builders" />
+        <Pipe />
+        <MetaItem k="stack" v="mcp · claude code" />
+        <Pipe />
+        <MetaItem k="status" v="open source · live" color="#4EC86C" />
+        <Pipe />
+        <MetaItem k="dates" v="mar 2026 — now" />
+      </Metadata>
+      <GitLog
+        theme={theme}
+        commits={[
+          {
+            hash: "e0b1f44",
+            msg: "feat: /tomalo slash command exports in the background",
+          },
+          {
+            hash: "9a2c8d7",
+            msg: "feat: team view — browse sessions across the org",
+          },
+          {
+            hash: "47f1b20",
+            msg: "feat: import — pull a teammate's session into your ctx",
+          },
+          {
+            hash: "0a0c101",
+            msg: "chore: initial commit — mcp server + export pipeline",
           },
         ]}
       />
@@ -864,6 +947,7 @@ export function Terminal() {
           <SyntaxContent onImageClick={(info) => setModal(info)} />
         )}
         {activeTab === "inmoba" && <InmobaContent />}
+        {activeTab === "damelo" && <DameloContent />}
       </div>
       {modal && (
         <ImageModal
