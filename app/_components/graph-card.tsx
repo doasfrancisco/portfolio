@@ -52,7 +52,7 @@ const PROJECT_LABEL: Record<ProjectKey, string> = {
 const YEAR_SUBTITLE: Record<YearKey, string> = {
   "2026": "jan — dec 2026",
   "2025": "jan — dec 2025",
-  "2024-2023": "2023 + 2024 · syntax era",
+  "2024-2023": "2023 + 2024",
 };
 
 /* ----------------------------- helpers ----------------------------- */
