@@ -3,6 +3,7 @@
 html, body {
   background: #000000;
   color: #ffffff;
+  overflow-x: hidden;
 }
 
 body {
@@ -191,6 +192,7 @@ body {
   .catafract-terminal-tile {
     width: calc(50% - 5px) !important;
     min-width: 0 !important;
+    flex-shrink: 1 !important;
     gap: 5px !important;
   }
   .catafract-terminal-tile-box {
