@@ -3,7 +3,7 @@
 html, body {
   background: #000000;
   color: #ffffff;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -31,15 +31,30 @@ body {
 
   /* --- page.tsx --- */
   .catafract-main-hero {
-    gap: 40px !important;
     padding-top: 0 !important;
-    padding-bottom: 56px !important;
+    padding-bottom: 40px !important;
     padding-inline: 0 !important;
   }
-  .catafract-main-terminal {
+  .catafract-main-body {
+    flex-direction: column !important;
+    gap: 56px !important;
     padding-top: 0 !important;
     padding-bottom: 32px !important;
+    padding-inline: 0 !important;
+    max-width: 100% !important;
+  }
+  .catafract-main-terminal-wrap {
+    order: 2 !important;
+    width: 100% !important;
     padding-inline: 20px !important;
+    box-sizing: border-box !important;
+  }
+  .catafract-main-graph-wrap {
+    order: 1 !important;
+    width: 100% !important;
+    position: static !important;
+    top: auto !important;
+    align-self: auto !important;
   }
 
   /* --- nav.tsx --- */

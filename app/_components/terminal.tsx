@@ -1152,7 +1152,7 @@ export function Terminal() {
         ref={ref}
         className="catafract-terminal-root"
         style={{
-          width: 1100,
+          width: "100%",
           backgroundColor: "#0A0A0A",
           border: "1px solid #1A1A1A",
           borderRadius: 12,

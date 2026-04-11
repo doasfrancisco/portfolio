@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 import { useTab, type TabKey, type YearKey } from "./tab-context";
 import {
   COMMIT_BY_YEAR,
@@ -10,12 +10,26 @@ import {
 
 /* ----------------------------- config ----------------------------- */
 
-const CELL = 12;
-const STRIDE = 15;
 const COLS = 53;
 const ROWS = 7;
-const SVG_W = COLS * STRIDE - (STRIDE - CELL); // 792
-const SVG_H = ROWS * STRIDE - (STRIDE - CELL); // 102
+
+// vertical variant (sidebar on desktop)
+// each row holds 14 days (2 weeks), so the grid is 14 cols x 27 rows
+const V_CELL = 10;
+const V_STRIDE = 13;
+const V_GRID_COLS = 14;
+const V_GRID_ROWS = 27;
+const V_SVG_W = V_GRID_COLS * V_STRIDE - (V_STRIDE - V_CELL); // 179
+const V_SVG_H = V_GRID_ROWS * V_STRIDE - (V_STRIDE - V_CELL); // 348
+
+function gridPosFor(cell: CellInfo): { gridCol: number; gridRow: number } {
+  // cell.col = week (0..52), cell.row = dayOfWeek (0..6)
+  const linearIdx = cell.col * 7 + cell.row;
+  return {
+    gridCol: linearIdx % V_GRID_COLS,
+    gridRow: Math.floor(linearIdx / V_GRID_COLS),
+  };
+}
 
 const PROJECT_COLORS: Record<ProjectKey, string> = {
   maxilar: "#22D3EE",
@@ -220,73 +234,6 @@ const months = [
   { name: "Dec", g: 4 },
 ];
 
-const dayLabelColStyle: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 3,
-  paddingTop: 22,
-  width: 28,
-};
-
-const dayLabelRow = {
-  color: "#555555",
-  fontSize: 10,
-  lineHeight: "12px",
-  height: 12,
-} as const;
-
-type YearButtonProps = {
-  year: YearKey;
-  active: boolean;
-  count: number;
-  onClick: () => void;
-};
-
-function YearButton({ year, active, count, onClick }: YearButtonProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        all: "unset",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-        gap: 2,
-        backgroundColor: active ? "#FFFFFF" : "transparent",
-        borderRadius: 8,
-        paddingBlock: 10,
-        paddingInline: 18,
-        width: 148,
-        boxSizing: "border-box",
-        cursor: "pointer",
-        transition: "background-color 120ms ease",
-      }}
-    >
-      <div
-        style={{
-          color: active ? "#000000" : "#888888",
-          fontSize: 13,
-          fontWeight: 600,
-          lineHeight: "16px",
-        }}
-      >
-        {year}
-      </div>
-      <div
-        style={{
-          color: active ? "#555555" : "#444444",
-          fontFamily: "var(--font-mono), monospace",
-          fontSize: 10,
-          lineHeight: "12px",
-        }}
-      >
-        {count.toLocaleString()} commits
-      </div>
-    </button>
-  );
-}
-
 /* ----------------------------- main ----------------------------- */
 
 export function GraphCard() {
@@ -319,198 +266,29 @@ function GraphCardDesktop() {
   return (
     <div
       style={{
-        width: 1100,
+        width: "100%",
         backgroundColor: "#0A0A0A",
         border: "1px solid #1A1A1A",
         borderRadius: 12,
-        paddingBlock: 32,
-        paddingInline: 40,
+        paddingBlock: 24,
+        paddingInline: 22,
         display: "flex",
         flexDirection: "column",
-        gap: 20,
+        gap: 16,
         boxSizing: "border-box",
         position: "relative",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
-          <div
-            style={{
-              color: "#FFFFFF",
-              fontSize: 15,
-              fontWeight: 600,
-              lineHeight: "18px",
-            }}
-          >
-            {yearCount.toLocaleString()} contributions ·{" "}
-            <span style={{ color: "#888888", fontWeight: 500 }}>
-              {YEAR_SUBTITLE[activeYear]}
-            </span>
-          </div>
-          <div
-            style={{
-              color: "#555555",
-              fontFamily: "var(--font-mono), monospace",
-              fontSize: 12,
-              lineHeight: "16px",
-            }}
-          >
-            ~/catafract/projects
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 32,
-        }}
-      >
-        <div style={{ display: "flex", gap: 8 }}>
-          <div style={dayLabelColStyle}>
-            <div style={{ height: 12 }} />
-            <div style={dayLabelRow}>Mon</div>
-            <div style={{ height: 12 }} />
-            <div style={dayLabelRow}>Wed</div>
-            <div style={{ height: 12 }} />
-            <div style={dayLabelRow}>Fri</div>
-            <div style={{ height: 12 }} />
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-              position: "relative",
-            }}
-          >
-            <div style={{ display: "flex", height: 16, width: SVG_W }}>
-              {months.map((m) => (
-                <div
-                  key={m.name}
-                  style={{
-                    flexGrow: m.g,
-                    flexBasis: 0,
-                    color: "#666666",
-                    fontSize: 10,
-                    lineHeight: "12px",
-                  }}
-                >
-                  {m.name}
-                </div>
-              ))}
-            </div>
-
-            <svg
-              width={SVG_W}
-              height={SVG_H}
-              viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-              xmlns="http://www.w3.org/2000/svg"
-              style={{ flexShrink: 0 }}
-              onMouseLeave={() => setHovered(null)}
-            >
-              {cells.map((cell) => {
-                const x = cell.col * STRIDE;
-                const y = cell.row * STRIDE;
-                const isEmpty = cell.total === 0;
-                const fill = isEmpty
-                  ? "#141414"
-                  : PROJECT_COLORS[cell.dominant as ProjectKey];
-                const opacity = cellOpacity(cell.total);
-                const clickable = !isEmpty;
-                return (
-                  <rect
-                    key={cell.date}
-                    x={x}
-                    y={y}
-                    width={CELL}
-                    height={CELL}
-                    rx={2}
-                    fill={fill}
-                    fillOpacity={opacity}
-                    style={{ cursor: clickable ? "pointer" : "default" }}
-                    onMouseEnter={() => setHovered(cell)}
-                    onClick={() => handleClickCell(cell)}
-                  />
-                );
-              })}
-            </svg>
-
-            {hovered && hovered.total > 0 && (
-              <Tooltip
-                cell={hovered}
-                containerWidth={SVG_W}
-                isCombined={isCombined}
-              />
-            )}
-          </div>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {(["2026", "2025", "2024-2023"] as YearKey[]).map((y) => (
-            <YearButton
-              key={y}
-              year={y}
-              active={activeYear === y}
-              count={COMMIT_BY_YEAR[y] ?? 0}
-              onClick={() => setActiveYear(y)}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          borderTop: "1px solid #1A1A1A",
-          paddingTop: 14,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          {(Object.keys(PROJECT_COLORS) as ProjectKey[]).map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => focusTerminal(p as TabKey)}
-              style={{
-                all: "unset",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                cursor: "pointer",
-              }}
-            >
-              <div
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 2,
-                  backgroundColor: PROJECT_COLORS[p],
-                }}
-              />
-              <div
-                style={{
-                  color: "#CCCCCC",
-                  fontSize: 12,
-                  fontWeight: 500,
-                  lineHeight: "16px",
-                }}
-              >
-                {PROJECT_LABEL[p]}
-              </div>
-            </button>
-          ))}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div
+          style={{
+            color: "#FFFFFF",
+            fontSize: 14,
+            fontWeight: 600,
+            lineHeight: "18px",
+          }}
+        >
+          {yearCount.toLocaleString()} contributions
         </div>
         <div
           style={{
@@ -520,43 +298,222 @@ function GraphCardDesktop() {
             lineHeight: "14px",
           }}
         >
-          click any cell to jump to the project
+          ~/catafract/projects · {YEAR_SUBTITLE[activeYear]}
         </div>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          gap: 6,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        {(
+          [
+            ["2026", "2026"],
+            ["2025", "2025"],
+            ["2024-2023", "24–23"],
+          ] as [YearKey, string][]
+        ).map(([y, label]) => (
+          <VerticalYearPill
+            key={y}
+            label={label}
+            active={activeYear === y}
+            onClick={() => setActiveYear(y)}
+          />
+        ))}
+      </div>
+
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          paddingTop: 2,
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            width: V_SVG_W,
+            marginInline: "auto",
+          }}
+        >
+          <svg
+            width={V_SVG_W}
+            height={V_SVG_H}
+            viewBox={`0 0 ${V_SVG_W} ${V_SVG_H}`}
+            xmlns="http://www.w3.org/2000/svg"
+            style={{ display: "block", overflow: "visible" }}
+            onMouseLeave={() => setHovered(null)}
+          >
+            {cells.map((cell) => {
+              const { gridCol, gridRow } = gridPosFor(cell);
+              const x = gridCol * V_STRIDE;
+              const y = gridRow * V_STRIDE;
+              const isEmpty = cell.total === 0;
+              const fill = isEmpty
+                ? "#141414"
+                : PROJECT_COLORS[cell.dominant as ProjectKey];
+              const opacity = cellOpacity(cell.total);
+              const clickable = !isEmpty;
+              return (
+                <rect
+                  key={cell.date}
+                  x={x}
+                  y={y}
+                  width={V_CELL}
+                  height={V_CELL}
+                  rx={2}
+                  fill={fill}
+                  fillOpacity={opacity}
+                  style={{ cursor: clickable ? "pointer" : "default" }}
+                  onMouseEnter={() => setHovered(cell)}
+                  onClick={() => handleClickCell(cell)}
+                />
+              );
+            })}
+          </svg>
+
+          <div
+            style={{
+              position: "absolute",
+              left: "calc(100% + 8px)",
+              top: 0,
+              width: 28,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {months.map((m) => (
+              <div
+                key={m.name}
+                style={{
+                  height: (m.g / 2) * V_STRIDE,
+                  color: "#666666",
+                  fontSize: 10,
+                  lineHeight: "12px",
+                }}
+              >
+                {m.name}
+              </div>
+            ))}
+          </div>
+
+          {hovered && hovered.total > 0 && (
+            <VerticalTooltip cell={hovered} isCombined={isCombined} />
+          )}
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "10px 14px",
+          justifyContent: "center",
+          alignItems: "center",
+          borderTop: "1px solid #1A1A1A",
+          paddingTop: 14,
+        }}
+      >
+        {(Object.keys(PROJECT_COLORS) as ProjectKey[]).map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => focusTerminal(p as TabKey)}
+            style={{
+              all: "unset",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              cursor: "pointer",
+            }}
+          >
+            <div
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: 2,
+                backgroundColor: PROJECT_COLORS[p],
+              }}
+            />
+            <div
+              style={{
+                color: "#CCCCCC",
+                fontSize: 11,
+                fontWeight: 500,
+                lineHeight: "13px",
+              }}
+            >
+              {PROJECT_LABEL[p]}
+            </div>
+          </button>
+        ))}
       </div>
     </div>
   );
 }
 
-/* ----------------------------- tooltip ----------------------------- */
+function VerticalYearPill({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        all: "unset",
+        cursor: "pointer",
+        backgroundColor: active ? "#FFFFFF" : "transparent",
+        border: active ? "none" : "1px solid #222222",
+        borderRadius: 6,
+        paddingBlock: active ? 7 : 6,
+        paddingInline: 12,
+        color: active ? "#000000" : "#888888",
+        fontSize: 11,
+        fontWeight: active ? 700 : 500,
+        lineHeight: "13px",
+        textAlign: "center",
+        boxSizing: "border-box",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
 
-function Tooltip({
+function VerticalTooltip({
   cell,
-  containerWidth,
   isCombined,
 }: {
   cell: CellInfo;
-  containerWidth: number;
   isCombined: boolean;
 }) {
-  const xCenter = cell.col * STRIDE + CELL / 2;
-  const yTop = cell.row * STRIDE;
-  const estWidth = 240;
-  const leftRaw = xCenter - estWidth / 2;
-  const left = Math.max(0, Math.min(containerWidth - estWidth, leftRaw));
-  const top = yTop - 10;
+  const { gridRow } = gridPosFor(cell);
+  const yCenter = gridRow * V_STRIDE + V_CELL / 2;
+  const maxY = V_GRID_ROWS * V_STRIDE;
+  const topRaw = yCenter - 50;
+  const top = Math.max(0, Math.min(maxY - 120, topRaw));
 
   return (
     <div
       style={{
         position: "absolute",
-        left,
+        right: "calc(100% + 12px)",
         top,
-        transform: "translateY(-100%)",
         backgroundColor: "#050507",
         border: "1px solid #1C1C20",
         borderRadius: 8,
         padding: "10px 12px",
-        minWidth: estWidth,
+        minWidth: 220,
         pointerEvents: "none",
         zIndex: 20,
         boxShadow: "0 10px 24px rgba(0,0,0,0.5)",
@@ -583,6 +540,8 @@ function Tooltip({
     </div>
   );
 }
+
+/* ----------------------------- tooltip ----------------------------- */
 
 function HeaderRow({ left, right }: { left: string; right: string }) {
   return (

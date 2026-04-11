@@ -22,26 +22,52 @@ export default function Page() {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 96,
             paddingTop: 80,
-            paddingBottom: 140,
+            paddingBottom: 60,
             paddingInline: 80,
           }}
         >
           <Hero />
-          <GraphCard />
         </section>
         <section
-          className="catafract-main-terminal"
+          className="catafract-main-body"
           style={{
             display: "flex",
+            flexDirection: "row",
+            alignItems: "flex-start",
             justifyContent: "center",
-            paddingTop: 0,
+            gap: 32,
+            paddingTop: 20,
             paddingBottom: 100,
-            paddingInline: 80,
+            paddingInline: 60,
+            maxWidth: 1440,
+            marginInline: "auto",
+            boxSizing: "border-box",
           }}
         >
-          <Terminal />
+          <div
+            className="catafract-main-terminal-wrap"
+            style={{
+              flex: "1 1 0",
+              minWidth: 0,
+              order: 1,
+            }}
+          >
+            <Terminal />
+          </div>
+          <aside
+            className="catafract-main-graph-wrap"
+            style={{
+              width: 320,
+              flexShrink: 0,
+              order: 2,
+              position: "sticky",
+              top: "max(24px, calc(50vh - 280px))",
+              alignSelf: "flex-start",
+            }}
+          >
+            <GraphCard />
+          </aside>
         </section>
         <Footer />
       </TabProvider>
