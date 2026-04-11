@@ -99,9 +99,117 @@ const THEMES: Record<TabKey, Theme> = {
 
 /* ------------------------------ primitives ------------------------------ */
 
+const TYPED_PROMPTS = new Set<string>();
+const SEQUENCE_LISTENERS = new Set<() => void>();
+
+const CMD_ORDER: readonly string[] = [
+  "cat about.md",
+  "git log --oneline -4",
+  "imgcat screens/*.png",
+];
+
+function markTyped(id: string) {
+  TYPED_PROMPTS.add(id);
+  SEQUENCE_LISTENERS.forEach((fn) => fn());
+}
+
+function getProgress(tab: string): number {
+  let n = 0;
+  for (const cmd of CMD_ORDER) {
+    if (TYPED_PROMPTS.has(`${tab}:${cmd}`)) n += 1;
+    else break;
+  }
+  return n;
+}
+
+function useTerminalProgress(): number {
+  const { activeTab } = useTab();
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const fn = () => setTick((t) => t + 1);
+    SEQUENCE_LISTENERS.add(fn);
+    return () => {
+      SEQUENCE_LISTENERS.delete(fn);
+    };
+  }, []);
+
+  return getProgress(activeTab);
+}
+
 function Prompt({ cmd, theme }: { cmd: string; theme: Theme }) {
+  const { activeTab } = useTab();
+  const id = `${activeTab}:${cmd}`;
+  const ref = useRef<HTMLDivElement>(null);
+  const [displayed, setDisplayed] = useState(() =>
+    TYPED_PROMPTS.has(id) ? cmd : ""
+  );
+  const [done, setDone] = useState(() => TYPED_PROMPTS.has(id));
+
+  useEffect(() => {
+    if (done) return;
+    const el = ref.current;
+    if (!el) return;
+
+    let cancelled = false;
+    let started = false;
+    let isInView = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const priorDone = () => {
+      const slot = CMD_ORDER.indexOf(cmd);
+      if (slot <= 0) return true;
+      return TYPED_PROMPTS.has(`${activeTab}:${CMD_ORDER[slot - 1]}`);
+    };
+
+    const tryStart = () => {
+      if (started || cancelled) return;
+      if (!isInView || !priorDone()) return;
+      started = true;
+
+      let i = 0;
+      const step = () => {
+        if (cancelled) return;
+        i += 1;
+        setDisplayed(cmd.slice(0, i));
+        if (i >= cmd.length) {
+          markTyped(id);
+          setDone(true);
+          return;
+        }
+        timer = setTimeout(step, 28 + Math.random() * 42);
+      };
+      step();
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            isInView = true;
+            tryStart();
+            return;
+          }
+        }
+      },
+      { threshold: 0.01 }
+    );
+    observer.observe(el);
+
+    const listener = () => tryStart();
+    SEQUENCE_LISTENERS.add(listener);
+
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+      SEQUENCE_LISTENERS.delete(listener);
+      if (timer !== undefined) clearTimeout(timer);
+    };
+  }, [cmd, id, done, activeTab]);
+
   return (
     <div
+      ref={ref}
       className="catafract-terminal-prompt"
       style={{
         display: "flex",
@@ -125,7 +233,14 @@ function Prompt({ cmd, theme }: { cmd: string; theme: Theme }) {
         :~ $
       </span>
       <span style={{ ...mono, color: "#FFFFFF", fontSize: 13, lineHeight: "16px" }}>
-        {cmd}
+        {displayed}
+        {!done && (
+          <span
+            className="catafract-terminal-caret"
+            style={{ backgroundColor: theme.accent }}
+            aria-hidden="true"
+          />
+        )}
       </span>
     </div>
   );
@@ -228,6 +343,7 @@ function GitLog({
   theme: Theme;
   commits: { hash: string; msg: string }[];
 }) {
+  const progress = useTerminalProgress();
   return (
     <div
       className="catafract-terminal-gitlog"
@@ -245,6 +361,7 @@ function GitLog({
           flexDirection: "column",
           gap: 4,
           paddingTop: 6,
+          visibility: progress >= 2 ? "visible" : "hidden",
         }}
       >
         {commits.map((c) => (
@@ -571,6 +688,7 @@ function GallerySection({
   theme: Theme;
   firstTile?: ReactNode;
 }) {
+  const progress = useTerminalProgress();
   return (
     <div
       className="catafract-terminal-gallery-section"
@@ -583,29 +701,38 @@ function GallerySection({
       <div style={{ paddingTop: 20 }}>
         <Prompt cmd="imgcat screens/*.png" theme={theme} />
       </div>
-      <MockupGallery firstTile={firstTile} />
       <div
         style={{
           display: "flex",
-          alignItems: "center",
-          gap: 14,
-          paddingTop: 14,
+          flexDirection: "column",
+          visibility: progress >= 3 ? "visible" : "hidden",
         }}
       >
-        <span
-          className="catafract-terminal-gallery-meta"
-          style={{ ...mono, color: "#555555", fontSize: 11, lineHeight: "14px" }}
+        <MockupGallery firstTile={firstTile} />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            paddingTop: 14,
+          }}
         >
-          8 files · 7.7mb · rendered in 0.04s
-        </span>
+          <span
+            className="catafract-terminal-gallery-meta"
+            style={{ ...mono, color: "#555555", fontSize: 11, lineHeight: "14px" }}
+          >
+            8 files · 7.7mb · rendered in 0.04s
+          </span>
+        </div>
+        <Cursor theme={theme} />
       </div>
-      <Cursor theme={theme} />
     </div>
   );
 }
 
 function MaxilarContent() {
   const theme = THEMES.maxilar;
+  const progress = useTerminalProgress();
   return (
     <div
       className="catafract-terminal-content"
@@ -618,52 +745,66 @@ function MaxilarContent() {
       }}
     >
       <Prompt cmd="cat about.md" theme={theme} />
-      <Heading>AI agents for cool dentists.</Heading>
-      <Description>
-        Maxilar built AI agents that sit inside dental practices — handling
-        intake, scheduling, and follow-ups without the front desk breaking a
-        sweat. Winners of Startup Peru, raised $15K equity free, shipped for a
-        year, and sold to Doctoc in January with a clean HL7 FHIR handoff of
-        every clinical record.
-      </Description>
-      <Metadata>
-        <MetaItem k="role" v="co-founder · ceo" />
-        <Pipe />
-        <MetaItem k="award" v="startup peru winner" color="#4EC86C" />
-        <Pipe />
-        <MetaItem k="exit" v="acquired by doctoc" color="#4EC86C" />
-        <Pipe />
-        <MetaItem k="dates" v="jan 2025 — jan 2026" />
-      </Metadata>
-      <GitLog
-        theme={theme}
-        commits={[
-          {
-            hash: "a7f2c01",
-            msg: "feat: hand off accounts to doctoc, archive infra",
-          },
-          {
-            hash: "3d9b144",
-            msg: "feat: scheduling agent now covers 12 clinics across lima",
-          },
-          {
-            hash: "8e41a0b",
-            msg: "fix: intake flow drops fewer leads after reminder rewrite",
-          },
-          {
-            hash: "1c5ff20",
-            msg: "chore: initial commit — one dentist, one agent, one dream",
-          },
-        ]}
-      />
-      <GallerySection theme={theme} />
-      <FooterRow theme={theme} />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          visibility: progress >= 1 ? "visible" : "hidden",
+        }}
+      >
+        <Heading>AI agents for cool dentists.</Heading>
+        <Description>
+          Maxilar built AI agents that sit inside dental practices — handling
+          intake, scheduling, and follow-ups without the front desk breaking a
+          sweat. Winners of Startup Peru, raised $15K equity free, shipped for a
+          year, and sold to Doctoc in January with a clean HL7 FHIR handoff of
+          every clinical record.
+        </Description>
+        <Metadata>
+          <MetaItem k="role" v="co-founder · ceo" />
+          <Pipe />
+          <MetaItem k="award" v="startup peru winner" color="#4EC86C" />
+          <Pipe />
+          <MetaItem k="exit" v="acquired by doctoc" color="#4EC86C" />
+          <Pipe />
+          <MetaItem k="dates" v="jan 2025 — jan 2026" />
+        </Metadata>
+        <GitLog
+          theme={theme}
+          commits={[
+            {
+              hash: "a7f2c01",
+              msg: "feat: hand off accounts to doctoc, archive infra",
+            },
+            {
+              hash: "3d9b144",
+              msg: "feat: scheduling agent now covers 12 clinics across lima",
+            },
+            {
+              hash: "8e41a0b",
+              msg: "fix: intake flow drops fewer leads after reminder rewrite",
+            },
+            {
+              hash: "1c5ff20",
+              msg: "chore: initial commit — one dentist, one agent, one dream",
+            },
+          ]}
+        />
+      </div>
+      <div style={{ visibility: progress >= 2 ? "visible" : "hidden" }}>
+        <GallerySection theme={theme} />
+      </div>
+      <div style={{ visibility: progress >= 3 ? "visible" : "hidden" }}>
+        <FooterRow theme={theme} />
+      </div>
     </div>
   );
 }
 
 function PulsoContent() {
   const theme = THEMES.pulso;
+  const progress = useTerminalProgress();
   return (
     <div
       className="catafract-terminal-content"
@@ -676,46 +817,59 @@ function PulsoContent() {
       }}
     >
       <Prompt cmd="cat about.md" theme={theme} />
-      <Heading>AI for occupational health.</Heading>
-      <Description>
-        Pulso Salud (Ana Prevention) is the occupational health platform used
-        by clinics and companies across Peru to run pre-employment and periodic
-        exams, manage protocols, and keep workers safe. The team is rebuilding
-        it AI-native — smart intake, automated reports, and a new frontend
-        that replaces a legacy system that had been in production for years.
-      </Description>
-      <Metadata>
-        <MetaItem k="role" v="head of ai" />
-        <Pipe />
-        <MetaItem k="scope" v="new frontend · db · mcps" color="#F472B6" />
-        <Pipe />
-        <MetaItem k="status" v="live · shipping" color="#F472B6" />
-        <Pipe />
-        <MetaItem k="dates" v="jan 2026 — now" />
-      </Metadata>
-      <GitLog
-        theme={theme}
-        commits={[
-          {
-            hash: "c71a2f9",
-            msg: "feat: ship new frontend replacing the ap-legacy system",
-          },
-          {
-            hash: "b08e3d1",
-            msg: "feat: maria mcp agent for clinic workflows",
-          },
-          {
-            hash: "4f1c0a6",
-            msg: "feat: sap integration for pre-employment exam billing",
-          },
-          {
-            hash: "0d2b9c7",
-            msg: "chore: initial commit — ai-native rewrite kicks off",
-          },
-        ]}
-      />
-      <GallerySection theme={theme} />
-      <FooterRow theme={theme} />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          visibility: progress >= 1 ? "visible" : "hidden",
+        }}
+      >
+        <Heading>AI for occupational health.</Heading>
+        <Description>
+          Pulso Salud (Ana Prevention) is the occupational health platform used
+          by clinics and companies across Peru to run pre-employment and periodic
+          exams, manage protocols, and keep workers safe. The team is rebuilding
+          it AI-native — smart intake, automated reports, and a new frontend
+          that replaces a legacy system that had been in production for years.
+        </Description>
+        <Metadata>
+          <MetaItem k="role" v="head of ai" />
+          <Pipe />
+          <MetaItem k="scope" v="new frontend · db · mcps" color="#F472B6" />
+          <Pipe />
+          <MetaItem k="status" v="live · shipping" color="#F472B6" />
+          <Pipe />
+          <MetaItem k="dates" v="jan 2026 — now" />
+        </Metadata>
+        <GitLog
+          theme={theme}
+          commits={[
+            {
+              hash: "c71a2f9",
+              msg: "feat: ship new frontend replacing the ap-legacy system",
+            },
+            {
+              hash: "b08e3d1",
+              msg: "feat: maria mcp agent for clinic workflows",
+            },
+            {
+              hash: "4f1c0a6",
+              msg: "feat: sap integration for pre-employment exam billing",
+            },
+            {
+              hash: "0d2b9c7",
+              msg: "chore: initial commit — ai-native rewrite kicks off",
+            },
+          ]}
+        />
+      </div>
+      <div style={{ visibility: progress >= 2 ? "visible" : "hidden" }}>
+        <GallerySection theme={theme} />
+      </div>
+      <div style={{ visibility: progress >= 3 ? "visible" : "hidden" }}>
+        <FooterRow theme={theme} />
+      </div>
     </div>
   );
 }
@@ -731,6 +885,7 @@ function SyntaxContent({
   }) => void;
 }) {
   const theme = THEMES.syntax;
+  const progress = useTerminalProgress();
   return (
     <div
       className="catafract-terminal-content"
@@ -743,70 +898,99 @@ function SyntaxContent({
       }}
     >
       <Prompt cmd="cat about.md" theme={theme} />
-      <Heading>English fluency from your phone.</Heading>
-      <Description>
-        Syntax is an AI English tutor for speakers of Spanish. Pick a topic,
-        pick an accent, then talk — the tutor listens, corrects your
-        pronunciation with ML models, and answers back in real time. Built
-        end-to-end: backend, audio processing, and web app. Raised $125K from
-        investors in Peru, Chile, and Switzerland. Live on iOS and Android.
-      </Description>
-      <Metadata>
-        <MetaItem k="role" v="co-founder" />
-        <Pipe />
-        <MetaItem k="raised" v="$125k" color="#A78BFA" />
-        <Pipe />
-        <MetaItem k="funding" v="vc backed · pe · cl · ch" />
-        <Pipe />
-        <MetaItem k="dates" v="jan 2023 — may 2024" />
-      </Metadata>
-      <GitLog
-        theme={theme}
-        commits={[
-          {
-            hash: "f0c8c21",
-            msg: "feat: ship ios + android with unlimited conversations",
-          },
-          {
-            hash: "b4a2e99",
-            msg: "feat: pronunciation scoring via in-house ml models",
-          },
-          {
-            hash: "79d410c",
-            msg: "feat: accent picker — us, uk, au on every topic",
-          },
-          {
-            hash: "2e11a44",
-            msg: "chore: repo init — one tutor, one user, one conversation",
-          },
-        ]}
-      />
-      <GallerySection
-        theme={theme}
-        firstTile={
-          <ImageTile
-            num="01"
-            filename="landing.png"
-            size="1.6mb"
-            src="/syntax-01.png"
-            onClick={() =>
-              onImageClick({
-                src: "/syntax-01.png",
-                alt: "syntax.catafract.com landing page",
-                label: "01 / syntax — landing.png",
-                size: "1.6mb",
-              })
-            }
-          />
-        }
-      />
-      <FooterRow theme={theme} />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          visibility: progress >= 1 ? "visible" : "hidden",
+        }}
+      >
+        <Heading>English fluency from your phone.</Heading>
+        <Description>
+          Syntax is an AI English tutor for speakers of Spanish. Pick a topic,
+          pick an accent, then talk — the tutor listens, corrects your
+          pronunciation with ML models, and answers back in real time. Built
+          end-to-end: backend, audio processing, and web app. Raised $125K from
+          investors in Peru, Chile, and Switzerland. Live on iOS and Android.
+        </Description>
+        <Metadata>
+          <MetaItem k="role" v="co-founder" />
+          <Pipe />
+          <MetaItem k="raised" v="$125k" color="#A78BFA" />
+          <Pipe />
+          <MetaItem k="funding" v="vc backed · pe · cl · ch" />
+          <Pipe />
+          <MetaItem k="dates" v="jan 2023 — may 2024" />
+        </Metadata>
+        <GitLog
+          theme={theme}
+          commits={[
+            {
+              hash: "f0c8c21",
+              msg: "feat: ship ios + android with unlimited conversations",
+            },
+            {
+              hash: "b4a2e99",
+              msg: "feat: pronunciation scoring via in-house ml models",
+            },
+            {
+              hash: "79d410c",
+              msg: "feat: accent picker — us, uk, au on every topic",
+            },
+            {
+              hash: "2e11a44",
+              msg: "chore: repo init — one tutor, one user, one conversation",
+            },
+          ]}
+        />
+      </div>
+      <div style={{ visibility: progress >= 2 ? "visible" : "hidden" }}>
+        <GallerySection
+          theme={theme}
+          firstTile={
+            <ImageTile
+              num="01"
+              filename="landing.png"
+              size="1.6mb"
+              src="/syntax-01.png"
+              onClick={() =>
+                onImageClick({
+                  src: "/syntax-01.png",
+                  alt: "syntax.catafract.com landing page",
+                  label: "01 / syntax — landing.png",
+                  size: "1.6mb",
+                })
+              }
+            />
+          }
+        />
+      </div>
+      <div style={{ visibility: progress >= 3 ? "visible" : "hidden" }}>
+        <FooterRow theme={theme} />
+      </div>
     </div>
   );
 }
 
-function InmobaContent() {
+function InmobaContent({
+  onImageClick,
+}: {
+  onImageClick: (info: {
+    src: string;
+    alt: string;
+    label: string;
+    size: string;
+  }) => void;
+}) {
   const theme = THEMES.inmoba;
+  const shots: { num: string; filename: string; size: string; src: string; alt: string }[] = [
+    { num: "01", filename: "hero.png", size: "0.1mb", src: "/inmoba-01.png", alt: "inmoba hero — cualquier propiedad, tasación en 60 segundos" },
+    { num: "02", filename: "map.png", size: "0.2mb", src: "/inmoba-02.png", alt: "inmoba map — click en cualquier distrito para ver análisis pre-financiero" },
+    { num: "03", filename: "flow.png", size: "0.1mb", src: "/inmoba-03.png", alt: "inmoba how it works — de dirección a reporte en un minuto" },
+    { num: "04", filename: "cta.png", size: "0.1mb", src: "/inmoba-04.png", alt: "inmoba cta — tu próxima propiedad tasada antes del café" },
+  ];
+  const progress = useTerminalProgress();
   return (
     <div
       className="catafract-terminal-content"
@@ -819,52 +1003,136 @@ function InmobaContent() {
       }}
     >
       <Prompt cmd="cat about.md" theme={theme} />
-      <Heading>Property valuations in 60 seconds.</Heading>
-      <Description>
-        Inmoba prices any property in the Peruvian market in under a minute.
-        Drop an address, the model pulls recent comps within a 500m radius and
-        spits out a full valuation report — the kind a bank or a realtor would
-        normally take days to produce. Live at inmoba.app, used by owners,
-        brokers, and anyone who needs a real number without the middleman.
-      </Description>
-      <Metadata>
-        <MetaItem k="role" v="co-founder · builder" />
-        <Pipe />
-        <MetaItem k="focus" v="tasación · 60s" />
-        <Pipe />
-        <MetaItem k="status" v="live · shipping" color="#F59E0B" />
-        <Pipe />
-        <MetaItem k="dates" v="feb 2026 — now" />
-      </Metadata>
-      <GitLog
-        theme={theme}
-        commits={[
-          {
-            hash: "6c9f1a2",
-            msg: "feat: valuation report in 60s — comps within 500m",
-          },
-          {
-            hash: "41b0d8e",
-            msg: "feat: scraper covers 14 distritos across lima",
-          },
-          {
-            hash: "aa22d7f",
-            msg: "feat: exportable pdf report for brokers and owners",
-          },
-          {
-            hash: "00e1f10",
-            msg: "chore: initial commit — first address priced in <60s",
-          },
-        ]}
-      />
-      <GallerySection theme={theme} />
-      <FooterRow theme={theme} />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          visibility: progress >= 1 ? "visible" : "hidden",
+        }}
+      >
+        <Heading>Property valuations in 60 seconds.</Heading>
+        <Description>
+          Inmoba prices any property in the Peruvian market in under a minute.
+          Drop an address, the model pulls recent comps within a 500m radius and
+          spits out a full valuation report — the kind a bank or a realtor would
+          normally take days to produce. Live at inmoba.app, used by owners,
+          brokers, and anyone who needs a real number without the middleman.
+        </Description>
+        <Metadata>
+          <MetaItem k="role" v="co-founder · builder" />
+          <Pipe />
+          <MetaItem k="focus" v="tasación · 60s" />
+          <Pipe />
+          <MetaItem k="status" v="live · shipping" color="#F59E0B" />
+          <Pipe />
+          <MetaItem k="dates" v="feb 2026 — now" />
+        </Metadata>
+        <GitLog
+          theme={theme}
+          commits={[
+            {
+              hash: "6c9f1a2",
+              msg: "feat: valuation report in 60s — comps within 500m",
+            },
+            {
+              hash: "41b0d8e",
+              msg: "feat: scraper covers 14 distritos across lima",
+            },
+            {
+              hash: "aa22d7f",
+              msg: "feat: exportable pdf report for brokers and owners",
+            },
+            {
+              hash: "00e1f10",
+              msg: "chore: initial commit — first address priced in <60s",
+            },
+          ]}
+        />
+      </div>
+      <div
+        className="catafract-terminal-gallery-section"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          paddingTop: 4,
+          visibility: progress >= 2 ? "visible" : "hidden",
+        }}
+      >
+        <div style={{ paddingTop: 20 }}>
+          <Prompt cmd="imgcat screens/*.png" theme={theme} />
+        </div>
+        <div
+          style={{ visibility: progress >= 3 ? "visible" : "hidden" }}
+        >
+          <div
+            className="catafract-terminal-gallery"
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 18,
+              paddingTop: 6,
+            }}
+          >
+            {shots.map((s) => (
+              <ImageTile
+                key={s.num}
+                num={s.num}
+                filename={s.filename}
+                size={s.size}
+                src={s.src}
+                onClick={() =>
+                  onImageClick({
+                    src: s.src,
+                    alt: s.alt,
+                    label: `${s.num} / inmoba — ${s.filename}`,
+                    size: s.size,
+                  })
+                }
+              />
+            ))}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              paddingTop: 14,
+            }}
+          >
+            <span
+              className="catafract-terminal-gallery-meta"
+              style={{ ...mono, color: "#555555", fontSize: 11, lineHeight: "14px" }}
+            >
+              4 files · 0.5mb · rendered in 0.02s
+            </span>
+          </div>
+          <Cursor theme={theme} />
+        </div>
+      </div>
+      <div style={{ visibility: progress >= 3 ? "visible" : "hidden" }}>
+        <FooterRow theme={theme} />
+      </div>
     </div>
   );
 }
 
-function DameloContent() {
+function DameloContent({
+  onImageClick,
+}: {
+  onImageClick: (info: {
+    src: string;
+    alt: string;
+    label: string;
+    size: string;
+  }) => void;
+}) {
   const theme = THEMES.damelo;
+  const shots: { num: string; filename: string; size: string; src: string; alt: string }[] = [
+    { num: "01", filename: "landing-top.png", size: "0.1mb", src: "/damelo-01.png", alt: "damelo.sh landing — share your AI sessions with your team" },
+    { num: "02", filename: "landing-bottom.png", size: "0.1mb", src: "/damelo-02.png", alt: "damelo.sh examples — export, browse, and import sessions" },
+  ];
+  const progress = useTerminalProgress();
   return (
     <div
       className="catafract-terminal-content"
@@ -877,53 +1145,124 @@ function DameloContent() {
       }}
     >
       <Prompt cmd="cat about.md" theme={theme} />
-      <Heading>Share your AI sessions with your team.</Heading>
-      <Description>
-        Damelo is an MCP server that exports, imports, and browses Claude Code
-        sessions across a whole organization. Talk to Claude in plain English
-        — &quot;export this to damelo&quot; — or run the <code>/tomalo</code>{" "}
-        slash command and it runs in the background while you keep shipping.
-        Nothing gets lost when a teammate debugs something tricky. Built for
-        teams that ship with AI.
-      </Description>
-      <Metadata>
-        <MetaItem k="role" v="builders" />
-        <Pipe />
-        <MetaItem k="stack" v="mcp · claude code" />
-        <Pipe />
-        <MetaItem k="status" v="open source · live" color="#A3A3A3" />
-        <Pipe />
-        <MetaItem k="dates" v="mar 2026 — now" />
-      </Metadata>
-      <GitLog
-        theme={theme}
-        commits={[
-          {
-            hash: "e0b1f44",
-            msg: "feat: /tomalo slash command exports in the background",
-          },
-          {
-            hash: "9a2c8d7",
-            msg: "feat: team view — browse sessions across the org",
-          },
-          {
-            hash: "47f1b20",
-            msg: "feat: import — pull a teammate's session into your ctx",
-          },
-          {
-            hash: "0a0c101",
-            msg: "chore: initial commit — mcp server + export pipeline",
-          },
-        ]}
-      />
-      <GallerySection theme={theme} />
-      <FooterRow theme={theme} />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          visibility: progress >= 1 ? "visible" : "hidden",
+        }}
+      >
+        <Heading>Share your AI sessions with your team.</Heading>
+        <Description>
+          Damelo is an MCP server that exports, imports, and browses Claude Code
+          sessions across a whole organization. Talk to Claude in plain English
+          — &quot;export this to damelo&quot; — or run the <code>/tomalo</code>{" "}
+          slash command and it runs in the background while you keep shipping.
+          Nothing gets lost when a teammate debugs something tricky. Built for
+          teams that ship with AI.
+        </Description>
+        <Metadata>
+          <MetaItem k="role" v="builders" />
+          <Pipe />
+          <MetaItem k="stack" v="mcp · claude code" />
+          <Pipe />
+          <MetaItem k="status" v="open source · live" color="#A3A3A3" />
+          <Pipe />
+          <MetaItem k="dates" v="mar 2026 — now" />
+        </Metadata>
+        <GitLog
+          theme={theme}
+          commits={[
+            {
+              hash: "e0b1f44",
+              msg: "feat: /tomalo slash command exports in the background",
+            },
+            {
+              hash: "9a2c8d7",
+              msg: "feat: team view — browse sessions across the org",
+            },
+            {
+              hash: "47f1b20",
+              msg: "feat: import — pull a teammate's session into your ctx",
+            },
+            {
+              hash: "0a0c101",
+              msg: "chore: initial commit — mcp server + export pipeline",
+            },
+          ]}
+        />
+      </div>
+      <div
+        className="catafract-terminal-gallery-section"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          paddingTop: 4,
+          visibility: progress >= 2 ? "visible" : "hidden",
+        }}
+      >
+        <div style={{ paddingTop: 20 }}>
+          <Prompt cmd="imgcat screens/*.png" theme={theme} />
+        </div>
+        <div
+          style={{ visibility: progress >= 3 ? "visible" : "hidden" }}
+        >
+          <div
+            className="catafract-terminal-gallery"
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 18,
+              paddingTop: 6,
+            }}
+          >
+            {shots.map((s) => (
+              <ImageTile
+                key={s.num}
+                num={s.num}
+                filename={s.filename}
+                size={s.size}
+                src={s.src}
+                onClick={() =>
+                  onImageClick({
+                    src: s.src,
+                    alt: s.alt,
+                    label: `${s.num} / damelo — ${s.filename}`,
+                    size: s.size,
+                  })
+                }
+              />
+            ))}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              paddingTop: 14,
+            }}
+          >
+            <span
+              className="catafract-terminal-gallery-meta"
+              style={{ ...mono, color: "#555555", fontSize: 11, lineHeight: "14px" }}
+            >
+              2 files · 0.2mb · rendered in 0.02s
+            </span>
+          </div>
+          <Cursor theme={theme} />
+        </div>
+      </div>
+      <div style={{ visibility: progress >= 3 ? "visible" : "hidden" }}>
+        <FooterRow theme={theme} />
+      </div>
     </div>
   );
 }
 
 function DoctocContent() {
   const theme = THEMES.doctoc;
+  const progress = useTerminalProgress();
   return (
     <div
       className="catafract-terminal-content"
@@ -936,47 +1275,60 @@ function DoctocContent() {
       }}
     >
       <Prompt cmd="cat about.md" theme={theme} />
-      <Heading>HL7 FHIR compliance for Latin American EHRs.</Heading>
-      <Description>
-        After Maxilar was acquired, the same team rebuilt Doctoc&apos;s clinical
-        data layer to be fully HL7 FHIR R4 compliant — patient, encounter,
-        observation, medication and diagnostic resources all map to the
-        standard so records move cleanly between clinics, insurers, and labs.
-        Doctoc is the AI-powered EHR saving doctors 3+ hours a day across
-        LATAM; we made it the region&apos;s first FHIR-native option.
-      </Description>
-      <Metadata>
-        <MetaItem k="role" v="builders · post-exit" />
-        <Pipe />
-        <MetaItem k="scope" v="hl7 fhir r4" color="#4EC86C" />
-        <Pipe />
-        <MetaItem k="status" v="live · compliant" color="#4EC86C" />
-        <Pipe />
-        <MetaItem k="dates" v="feb 2026 — now" />
-      </Metadata>
-      <GitLog
-        theme={theme}
-        commits={[
-          {
-            hash: "5d3c7b1",
-            msg: "feat: patient + encounter + observation → fhir r4",
-          },
-          {
-            hash: "b2f9a06",
-            msg: "feat: medication request / dispense export to any hl7 endpoint",
-          },
-          {
-            hash: "77c3e11",
-            msg: "feat: bulk fhir export for payer and lab integrations",
-          },
-          {
-            hash: "30a118d",
-            msg: "chore: initial commit — fhir layer on top of doctoc ehr",
-          },
-        ]}
-      />
-      <GallerySection theme={theme} />
-      <FooterRow theme={theme} />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          visibility: progress >= 1 ? "visible" : "hidden",
+        }}
+      >
+        <Heading>HL7 FHIR compliance for Latin American EHRs.</Heading>
+        <Description>
+          After Maxilar was acquired, the same team rebuilt Doctoc&apos;s clinical
+          data layer to be fully HL7 FHIR R4 compliant — patient, encounter,
+          observation, medication and diagnostic resources all map to the
+          standard so records move cleanly between clinics, insurers, and labs.
+          Doctoc is the AI-powered EHR saving doctors 3+ hours a day across
+          LATAM; we made it the region&apos;s first FHIR-native option.
+        </Description>
+        <Metadata>
+          <MetaItem k="role" v="builders · post-exit" />
+          <Pipe />
+          <MetaItem k="scope" v="hl7 fhir r4" color="#4EC86C" />
+          <Pipe />
+          <MetaItem k="status" v="live · compliant" color="#4EC86C" />
+          <Pipe />
+          <MetaItem k="dates" v="feb 2026 — now" />
+        </Metadata>
+        <GitLog
+          theme={theme}
+          commits={[
+            {
+              hash: "5d3c7b1",
+              msg: "feat: patient + encounter + observation → fhir r4",
+            },
+            {
+              hash: "b2f9a06",
+              msg: "feat: medication request / dispense export to any hl7 endpoint",
+            },
+            {
+              hash: "77c3e11",
+              msg: "feat: bulk fhir export for payer and lab integrations",
+            },
+            {
+              hash: "30a118d",
+              msg: "chore: initial commit — fhir layer on top of doctoc ehr",
+            },
+          ]}
+        />
+      </div>
+      <div style={{ visibility: progress >= 2 ? "visible" : "hidden" }}>
+        <GallerySection theme={theme} />
+      </div>
+      <div style={{ visibility: progress >= 3 ? "visible" : "hidden" }}>
+        <FooterRow theme={theme} />
+      </div>
     </div>
   );
 }
@@ -1167,8 +1519,12 @@ export function Terminal() {
         {activeTab === "syntax" && (
           <SyntaxContent onImageClick={(info) => setModal(info)} />
         )}
-        {activeTab === "inmoba" && <InmobaContent />}
-        {activeTab === "damelo" && <DameloContent />}
+        {activeTab === "inmoba" && (
+          <InmobaContent onImageClick={(info) => setModal(info)} />
+        )}
+        {activeTab === "damelo" && (
+          <DameloContent onImageClick={(info) => setModal(info)} />
+        )}
         {activeTab === "doctoc" && <DoctocContent />}
       </div>
       {modal && (

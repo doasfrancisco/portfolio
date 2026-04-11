@@ -71,16 +71,19 @@ export function Hero() {
         style={{
           display: "inline-flex",
           alignItems: "center",
-          gap: 8,
+          justifyContent: "center",
           backgroundColor: "#FFFFFF",
-          borderRadius: 8,
-          paddingBlock: 8,
-          paddingInline: 16,
+          borderRadius: 10,
+          paddingBlock: 13,
+          paddingInline: 28,
+          marginTop: 4,
           color: "#000000",
           fontSize: 14,
-          fontWeight: 600,
+          fontWeight: 700,
           lineHeight: "18px",
           textDecoration: "none",
+          boxShadow:
+            "0 20px 60px rgba(255, 255, 255, 0.22), 0 8px 24px rgba(255, 255, 255, 0.14)",
         }}
       >
         Get in touch

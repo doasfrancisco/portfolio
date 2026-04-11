@@ -99,6 +99,9 @@ body {
     padding-block: 10px !important;
     padding-inline: 18px !important;
     margin-top: 4px !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
   }
 
   /* --- graph-card.tsx --- */
@@ -312,4 +315,17 @@ body {
   .catafract-modal-image-wrap img {
     max-height: calc(100vh - 120px) !important;
   }
+}
+
+/* --- typing caret --- */
+@keyframes catafract-terminal-caret-blink {
+  50% { opacity: 0; }
+}
+.catafract-terminal-caret {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  margin-left: 3px;
+  vertical-align: middle;
+  animation: catafract-terminal-caret-blink 1s steps(1, end) infinite;
 }
