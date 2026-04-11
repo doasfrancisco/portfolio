@@ -17,6 +17,7 @@ export default function Page() {
       <TabProvider>
         <Nav />
         <section
+          className="catafract-main-hero"
           style={{
             display: "flex",
             flexDirection: "column",
@@ -31,6 +32,7 @@ export default function Page() {
           <GraphCard />
         </section>
         <section
+          className="catafract-main-terminal"
           style={{
             display: "flex",
             justifyContent: "center",

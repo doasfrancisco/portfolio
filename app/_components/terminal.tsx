@@ -101,7 +101,15 @@ const THEMES: Record<TabKey, Theme> = {
 
 function Prompt({ cmd, theme }: { cmd: string; theme: Theme }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+    <div
+      className="catafract-terminal-prompt"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        flexWrap: "wrap",
+      }}
+    >
       <span
         style={{
           ...mono,
@@ -163,10 +171,14 @@ function MetaItem({
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <span style={{ ...mono, color: "#555555", fontSize: 11, lineHeight: "14px" }}>
+      <span
+        className="catafract-terminal-meta-key"
+        style={{ ...mono, color: "#555555", fontSize: 11, lineHeight: "14px" }}
+      >
         {k}
       </span>
       <span
+        className="catafract-terminal-meta-val"
         style={{
           ...mono,
           color: color ?? "#CCCCCC",
@@ -192,6 +204,7 @@ function Pipe() {
 function Metadata({ children }: { children: ReactNode }) {
   return (
     <div
+      className="catafract-terminal-meta"
       style={{
         display: "flex",
         alignItems: "center",
@@ -214,6 +227,7 @@ function GitLog({
 }) {
   return (
     <div
+      className="catafract-terminal-gitlog"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -233,9 +247,11 @@ function GitLog({
         {commits.map((c) => (
           <div
             key={c.hash}
+            className="catafract-terminal-gitlog-row"
             style={{ display: "flex", alignItems: "baseline", gap: 14 }}
           >
             <span
+              className="catafract-terminal-gitlog-hash"
               style={{
                 ...mono,
                 color: theme.accent,
@@ -246,6 +262,7 @@ function GitLog({
               {c.hash}
             </span>
             <span
+              className="catafract-terminal-gitlog-msg"
               style={{
                 ...mono,
                 color: "#CCCCCC",
@@ -265,6 +282,7 @@ function GitLog({
 function FooterRow({ theme }: { theme: Theme }) {
   return (
     <div
+      className="catafract-terminal-footer-row"
       style={{
         display: "flex",
         alignItems: "center",
@@ -279,6 +297,7 @@ function FooterRow({ theme }: { theme: Theme }) {
           href={`https://${theme.domain}`}
           target="_blank"
           rel="noreferrer"
+          className="catafract-terminal-footer-domain"
           style={{
             ...mono,
             color: theme.accent,
@@ -297,11 +316,13 @@ function FooterRow({ theme }: { theme: Theme }) {
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
         <span
+          className="catafract-terminal-footer-commits"
           style={{ ...mono, color: "#555555", fontSize: 11, lineHeight: "14px" }}
         >
           {theme.commits} commits
         </span>
         <span
+          className="catafract-terminal-footer-status"
           style={{
             ...mono,
             color: theme.status.color,
@@ -333,6 +354,7 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
+      className="catafract-terminal-tab"
       style={{
         display: "flex",
         alignItems: "center",
@@ -349,6 +371,7 @@ function TabButton({
       }}
     >
       <div
+        className="catafract-terminal-tab-dot"
         style={{
           width: 8,
           height: 8,
@@ -357,6 +380,7 @@ function TabButton({
         }}
       />
       <span
+        className="catafract-terminal-tab-label"
         style={{
           ...mono,
           color: active ? "#FFFFFF" : "#888888",
@@ -368,6 +392,7 @@ function TabButton({
         {tab === "damelo" ? "d.sh" : tab}
       </span>
       <div
+        className="catafract-terminal-tab-badge"
         style={{
           backgroundColor: active ? theme.activeBadgeBg : "#050505",
           border: `1px solid ${active ? theme.activeBadgeBorder : "#1A1A1A"}`,
@@ -401,6 +426,7 @@ function TabBar({
 }) {
   return (
     <div
+      className="catafract-terminal-tabbar"
       style={{
         display: "flex",
         alignItems: "center",
@@ -412,6 +438,7 @@ function TabBar({
       }}
     >
       <div
+        className="catafract-terminal-traffic"
         style={{
           display: "flex",
           alignItems: "center",
@@ -420,9 +447,11 @@ function TabBar({
           borderRight: "1px solid #1A1A1A",
           marginRight: 2,
           paddingRight: 14,
+          flexShrink: 0,
         }}
       >
         <div
+          className="catafract-terminal-traffic-dot"
           style={{
             width: 12,
             height: 12,
@@ -431,6 +460,7 @@ function TabBar({
           }}
         />
         <div
+          className="catafract-terminal-traffic-dot"
           style={{
             width: 12,
             height: 12,
@@ -439,6 +469,7 @@ function TabBar({
           }}
         />
         <div
+          className="catafract-terminal-traffic-dot"
           style={{
             width: 12,
             height: 12,
@@ -477,8 +508,14 @@ function TabBar({
         active={activeTab === "doctoc"}
         onClick={() => onChange("doctoc")}
       />
-      <div style={{ flexGrow: 1 }} />
-      <span style={{ ...mono, color: "#1A1A1A", fontSize: 11, lineHeight: "14px" }}>
+      <div
+        className="catafract-terminal-tabbar-tail"
+        style={{ flexGrow: 1 }}
+      />
+      <span
+        className="catafract-terminal-tabbar-tail"
+        style={{ ...mono, color: "#1A1A1A", fontSize: 11, lineHeight: "14px" }}
+      >
         |
       </span>
     </div>
@@ -490,6 +527,7 @@ function TabBar({
 function Heading({ children }: { children: ReactNode }) {
   return (
     <h2
+      className="catafract-terminal-title"
       style={{
         margin: 0,
         color: "#FFFFFF",
@@ -508,6 +546,7 @@ function Heading({ children }: { children: ReactNode }) {
 function Description({ children }: { children: ReactNode }) {
   return (
     <p
+      className="catafract-terminal-desc"
       style={{
         margin: 0,
         color: "#888888",
@@ -531,6 +570,7 @@ function GallerySection({
 }) {
   return (
     <div
+      className="catafract-terminal-gallery-section"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -550,9 +590,10 @@ function GallerySection({
         }}
       >
         <span
+          className="catafract-terminal-gallery-meta"
           style={{ ...mono, color: "#555555", fontSize: 11, lineHeight: "14px" }}
         >
-          9 files · 8.7mb · rendered in 0.04s
+          8 files · 7.7mb · rendered in 0.04s
         </span>
       </div>
       <Cursor theme={theme} />
@@ -564,6 +605,7 @@ function MaxilarContent() {
   const theme = THEMES.maxilar;
   return (
     <div
+      className="catafract-terminal-content"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -621,6 +663,7 @@ function PulsoContent() {
   const theme = THEMES.pulso;
   return (
     <div
+      className="catafract-terminal-content"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -687,6 +730,7 @@ function SyntaxContent({
   const theme = THEMES.syntax;
   return (
     <div
+      className="catafract-terminal-content"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -762,6 +806,7 @@ function InmobaContent() {
   const theme = THEMES.inmoba;
   return (
     <div
+      className="catafract-terminal-content"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -819,6 +864,7 @@ function DameloContent() {
   const theme = THEMES.damelo;
   return (
     <div
+      className="catafract-terminal-content"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -877,6 +923,7 @@ function DoctocContent() {
   const theme = THEMES.doctoc;
   return (
     <div
+      className="catafract-terminal-content"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -965,6 +1012,7 @@ function ImageModal({
       aria-modal="true"
       aria-label={alt}
       onClick={onClose}
+      className="catafract-modal"
       style={{
         position: "fixed",
         inset: 0,
@@ -979,6 +1027,7 @@ function ImageModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        className="catafract-modal-inner"
         style={{
           display: "flex",
           flexDirection: "column",
@@ -993,10 +1042,12 @@ function ImageModal({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            gap: 12,
             width: "100%",
           }}
         >
           <div
+            className="catafract-modal-meta"
             style={{
               display: "flex",
               alignItems: "center",
@@ -1006,11 +1057,16 @@ function ImageModal({
               letterSpacing: "0.2px",
             }}
           >
-            <span style={{ color: "#666666" }}>{label ?? alt}</span>
+            <span
+              className="catafract-modal-meta-label"
+              style={{ color: "#666666" }}
+            >
+              {label ?? alt}
+            </span>
             {size && (
               <>
-                <span style={{ color: "#333333" }}>·</span>
-                <span style={{ color: "#555555" }}>{size}</span>
+                <span style={{ color: "#333333", flexShrink: 0 }}>·</span>
+                <span style={{ color: "#555555", flexShrink: 0 }}>{size}</span>
               </>
             )}
           </div>
@@ -1018,6 +1074,7 @@ function ImageModal({
             type="button"
             onClick={onClose}
             aria-label="Close"
+            className="catafract-modal-close"
             style={{
               width: 32,
               height: 32,
@@ -1033,12 +1090,14 @@ function ImageModal({
               alignItems: "center",
               justifyContent: "center",
               padding: 0,
+              flexShrink: 0,
             }}
           >
             ✕
           </button>
         </div>
         <div
+          className="catafract-modal-image-wrap"
           style={{
             display: "flex",
             width: "100%",
@@ -1088,6 +1147,7 @@ export function Terminal() {
     <>
       <div
         ref={ref}
+        className="catafract-terminal-root"
         style={{
           width: 1100,
           backgroundColor: "#0A0A0A",

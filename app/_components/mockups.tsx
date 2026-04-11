@@ -19,6 +19,7 @@ function Mockup({
 }) {
   return (
     <div
+      className="catafract-terminal-tile"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -28,6 +29,7 @@ function Mockup({
       }}
     >
       <div
+        className="catafract-terminal-tile-box"
         style={{
           backgroundColor: "#0A1518",
           border: "1px solid #1A3A3E",
@@ -70,10 +72,14 @@ function Mockup({
           paddingInline: 4,
         }}
       >
-        <div style={{ ...mono, color: "#555555", fontSize: 10, lineHeight: "12px" }}>
+        <div
+          className="catafract-terminal-tile-label-num"
+          style={{ ...mono, color: "#555555", fontSize: 10, lineHeight: "12px" }}
+        >
           {num}
         </div>
         <div
+          className="catafract-terminal-tile-label-name"
           style={{
             ...mono,
             color: "#CCCCCC",
@@ -85,7 +91,10 @@ function Mockup({
           {title}
         </div>
         <div style={{ flexGrow: 1 }} />
-        <div style={{ ...mono, color: "#444444", fontSize: 10, lineHeight: "12px" }}>
+        <div
+          className="catafract-terminal-tile-label-size"
+          style={{ ...mono, color: "#444444", fontSize: 10, lineHeight: "12px" }}
+        >
           {size}
         </div>
       </div>
@@ -456,67 +465,7 @@ function Analytics() {
   );
 }
 
-/* 07 — reminders */
-function Reminders() {
-  const rows = [
-    { filled: true, outlined: false },
-    { filled: false, outlined: true },
-    { filled: false, outlined: true },
-    { filled: false, outlined: false },
-    { filled: false, outlined: false },
-  ];
-  return (
-    <Mockup num="07" title="reminders.png" size="0.7mb" titleBarWidth={62}>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          flexGrow: 1,
-          gap: 8,
-          paddingBlock: 2,
-          paddingInline: 4,
-        }}
-      >
-        {rows.map((r, i) => (
-          <div
-            key={i}
-            style={{ display: "flex", alignItems: "center", gap: 6 }}
-          >
-            <div
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                backgroundColor: r.filled ? "#22D3EE" : "#0A1518",
-                border: r.outlined ? "1px solid #22D3EE" : r.filled ? "none" : "1px solid #1A3A3E",
-                flexShrink: 0,
-                boxSizing: "border-box",
-              }}
-            />
-            <div
-              style={{
-                flexGrow: 1,
-                height: 4,
-                borderRadius: 1,
-                backgroundColor: "#1A3A3E",
-              }}
-            />
-            <div
-              style={{
-                width: 24,
-                height: 3,
-                borderRadius: 1,
-                backgroundColor: "#143438",
-              }}
-            />
-          </div>
-        ))}
-      </div>
-    </Mockup>
-  );
-}
-
-/* 08 — settings */
+/* 07 — settings */
 function Settings() {
   const rows = [
     { l1: 80, l2: 120, on: true },
@@ -525,7 +474,7 @@ function Settings() {
     { l1: 60, l2: 90, on: false },
   ];
   return (
-    <Mockup num="08" title="settings.png" size="0.5mb" titleBarWidth={48}>
+    <Mockup num="07" title="settings.png" size="0.5mb" titleBarWidth={48}>
       <div
         style={{
           display: "flex",
@@ -590,10 +539,10 @@ function Settings() {
   );
 }
 
-/* 09 — login */
+/* 08 — login */
 function Login() {
   return (
-    <Mockup num="09" title="login.png" size="0.4mb" titleBarWidth={36}>
+    <Mockup num="08" title="login.png" size="0.4mb" titleBarWidth={36}>
       <div
         style={{
           display: "flex",
@@ -652,6 +601,7 @@ export function ImageTile({
 }) {
   return (
     <div
+      className="catafract-terminal-tile"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -663,6 +613,7 @@ export function ImageTile({
       <button
         onClick={onClick}
         aria-label={`Open ${filename}`}
+        className="catafract-terminal-tile-box"
         style={{
           backgroundColor: "#0A1518",
           border: "1px solid #1A3A3E",
@@ -695,10 +646,14 @@ export function ImageTile({
           paddingInline: 4,
         }}
       >
-        <div style={{ ...mono, color: "#555555", fontSize: 10, lineHeight: "12px" }}>
+        <div
+          className="catafract-terminal-tile-label-num"
+          style={{ ...mono, color: "#555555", fontSize: 10, lineHeight: "12px" }}
+        >
           {num}
         </div>
         <div
+          className="catafract-terminal-tile-label-name"
           style={{
             ...mono,
             color: "#CCCCCC",
@@ -710,7 +665,10 @@ export function ImageTile({
           {filename}
         </div>
         <div style={{ flexGrow: 1 }} />
-        <div style={{ ...mono, color: "#444444", fontSize: 10, lineHeight: "12px" }}>
+        <div
+          className="catafract-terminal-tile-label-size"
+          style={{ ...mono, color: "#444444", fontSize: 10, lineHeight: "12px" }}
+        >
           {size}
         </div>
       </div>
@@ -721,6 +679,7 @@ export function ImageTile({
 export function MockupGallery({ firstTile }: { firstTile?: ReactNode }) {
   return (
     <div
+      className="catafract-terminal-gallery"
       style={{
         display: "flex",
         flexWrap: "wrap",
@@ -734,7 +693,6 @@ export function MockupGallery({ firstTile }: { firstTile?: ReactNode }) {
       <Intake />
       <VoiceAgent />
       <Analytics />
-      <Reminders />
       <Settings />
       <Login />
     </div>

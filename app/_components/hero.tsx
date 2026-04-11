@@ -1,6 +1,7 @@
 export function Hero() {
   return (
     <div
+      className="catafract-hero"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -12,6 +13,7 @@ export function Hero() {
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div
+          className="catafract-hero-badge-dot"
           style={{
             width: 8,
             height: 8,
@@ -20,6 +22,7 @@ export function Hero() {
           }}
         />
         <div
+          className="catafract-hero-badge-label"
           style={{
             color: "#888888",
             fontSize: 13,
@@ -32,6 +35,7 @@ export function Hero() {
         </div>
       </div>
       <h1
+        className="catafract-hero-title"
         style={{
           margin: 0,
           color: "#FFFFFF",
@@ -46,6 +50,7 @@ export function Hero() {
         AI-first software factory
       </h1>
       <p
+        className="catafract-hero-desc"
         style={{
           margin: 0,
           color: "#888888",
@@ -62,6 +67,7 @@ export function Hero() {
         href="https://wa.me/51960400734?text=Catafract%20hi!"
         target="_blank"
         rel="noopener noreferrer"
+        className="catafract-hero-cta"
         style={{
           display: "inline-flex",
           alignItems: "center",

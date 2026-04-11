@@ -290,6 +290,19 @@ function YearButton({ year, active, count, onClick }: YearButtonProps) {
 /* ----------------------------- main ----------------------------- */
 
 export function GraphCard() {
+  return (
+    <>
+      <div className="catafract-desktop-only">
+        <GraphCardDesktop />
+      </div>
+      <div className="catafract-mobile-only catafract-graph-section">
+        <GraphCardMobile />
+      </div>
+    </>
+  );
+}
+
+function GraphCardDesktop() {
   const { activeYear, setActiveYear, focusTerminal } = useTab();
   const [hovered, setHovered] = useState<CellInfo | null>(null);
 
@@ -720,5 +733,271 @@ function CombinedTooltipBody({ cell }: { cell: CellInfo }) {
         })}
       </div>
     </>
+  );
+}
+
+/* ----------------------------- mobile ----------------------------- */
+
+const MOBILE_MONTH_LETTERS = [
+  "J",
+  "F",
+  "M",
+  "A",
+  "M",
+  "J",
+  "J",
+  "A",
+  "S",
+  "O",
+  "N",
+  "D",
+];
+
+const MOBILE_LEGEND: ProjectKey[] = [
+  "maxilar",
+  "pulso",
+  "syntax",
+  "inmoba",
+  "damelo",
+  "doctoc",
+];
+
+type MobileCell = {
+  month: number;
+  weekRow: number;
+  dominant: ProjectKey | null;
+  total: number;
+};
+
+function weekRowForDay(day: number): number {
+  if (day <= 6) return 0;
+  if (day <= 13) return 1;
+  if (day <= 20) return 2;
+  if (day <= 27) return 3;
+  return 4;
+}
+
+function buildMobileCells(year: YearKey): MobileCell[] {
+  const years =
+    year === "2026" ? [2026] : year === "2025" ? [2025] : [2024, 2023];
+
+  const buckets = new Map<string, Partial<Record<ProjectKey, number>>>();
+  for (let m = 0; m < 12; m++) {
+    for (let r = 0; r < 5; r++) {
+      buckets.set(`${m}-${r}`, {});
+    }
+  }
+
+  for (const day of COMMIT_DAYS) {
+    const [yStr, mStr, dStr] = day.date.split("-");
+    const y = Number(yStr);
+    if (!years.includes(y)) continue;
+    const m = Number(mStr) - 1;
+    const d = Number(dStr);
+    const r = weekRowForDay(d);
+    const key = `${m}-${r}`;
+    const existing = buckets.get(key)!;
+    for (const [p, c] of Object.entries(day.byProject) as [
+      ProjectKey,
+      number,
+    ][]) {
+      existing[p] = (existing[p] ?? 0) + c;
+    }
+  }
+
+  const cells: MobileCell[] = [];
+  for (let m = 0; m < 12; m++) {
+    for (let r = 0; r < 5; r++) {
+      const merged = buckets.get(`${m}-${r}`)!;
+      const { total, dominant } = computeDominantAndTotal(merged);
+      cells.push({ month: m, weekRow: r, dominant, total });
+    }
+  }
+  return cells;
+}
+
+function GraphCardMobile() {
+  const { activeYear, setActiveYear, focusTerminal } = useTab();
+  const cells = useMemo(() => buildMobileCells(activeYear), [activeYear]);
+  const yearCount = COMMIT_BY_YEAR[activeYear] ?? 0;
+
+  const YEAR_OPTIONS: { key: YearKey; label: string }[] = [
+    { key: "2026", label: "2026" },
+    { key: "2025", label: "2025" },
+    { key: "2024-2023", label: "2024–23" },
+  ];
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        maxWidth: 312,
+        marginInline: "auto",
+        boxSizing: "border-box",
+        backgroundColor: "#0A0A0A",
+        border: "1px solid #1A1A1A",
+        borderRadius: 12,
+        padding: 18,
+        display: "flex",
+        flexDirection: "column",
+        gap: 14,
+      }}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div
+          style={{
+            color: "#FFFFFF",
+            fontSize: 14,
+            fontWeight: 600,
+            lineHeight: "17px",
+          }}
+        >
+          {yearCount.toLocaleString()} contributions in the last year
+        </div>
+        <div
+          style={{
+            color: "#555555",
+            fontFamily: "var(--font-mono), monospace",
+            fontSize: 11,
+            lineHeight: "14px",
+          }}
+        >
+          ~/catafract/projects
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        {YEAR_OPTIONS.map((y) => {
+          const active = activeYear === y.key;
+          return (
+            <button
+              key={y.key}
+              type="button"
+              onClick={() => setActiveYear(y.key)}
+              style={{
+                all: "unset",
+                cursor: "pointer",
+                backgroundColor: active ? "#FFFFFF" : "transparent",
+                border: active ? "none" : "1px solid #1A1A1A",
+                borderRadius: 6,
+                paddingBlock: active ? 7 : 6,
+                paddingInline: 12,
+                color: active ? "#000000" : "#666666",
+                fontSize: 11,
+                fontWeight: active ? 700 : 500,
+                lineHeight: "13px",
+              }}
+            >
+              {y.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 3,
+            width: 201,
+          }}
+        >
+          {MOBILE_MONTH_LETTERS.map((letter, i) => (
+            <div
+              key={i}
+              style={{
+                width: 14,
+                textAlign: "center",
+                color: i === 0 ? "#888888" : "#666666",
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 8,
+                lineHeight: "10px",
+              }}
+            >
+              {letter}
+            </div>
+          ))}
+        </div>
+        <svg
+          width={201}
+          height={82}
+          viewBox="0 0 201 82"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ flexShrink: 0 }}
+        >
+          {cells.map((cell) => {
+            const x = cell.month * 17;
+            const y = cell.weekRow * 17;
+            const isEmpty = cell.total === 0;
+            const fill = isEmpty
+              ? "#141414"
+              : PROJECT_COLORS[cell.dominant as ProjectKey];
+            const opacity = cellOpacity(cell.total);
+            const clickable = !isEmpty;
+            return (
+              <rect
+                key={`${cell.month}-${cell.weekRow}`}
+                x={x}
+                y={y}
+                width={14}
+                height={14}
+                rx={2}
+                fill={fill}
+                fillOpacity={opacity}
+                style={{ cursor: clickable ? "pointer" : "default" }}
+                onClick={() => {
+                  if (cell.dominant)
+                    focusTerminal(cell.dominant as TabKey);
+                }}
+              />
+            );
+          })}
+        </svg>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "10px 14px",
+          borderTop: "1px solid #1A1A1A",
+          paddingTop: 14,
+        }}
+      >
+        {MOBILE_LEGEND.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => focusTerminal(p as TabKey)}
+            style={{
+              all: "unset",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              cursor: "pointer",
+            }}
+          >
+            <div
+              style={{
+                width: 9,
+                height: 9,
+                borderRadius: 2,
+                backgroundColor: PROJECT_COLORS[p],
+              }}
+            />
+            <div
+              style={{
+                color: "#CCCCCC",
+                fontSize: 11,
+                fontWeight: 500,
+                lineHeight: "13px",
+              }}
+            >
+              {PROJECT_LABEL[p]}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

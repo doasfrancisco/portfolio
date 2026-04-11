@@ -14,6 +14,7 @@ const iconStyle = { flexShrink: 0 } as const;
 export function Footer() {
   return (
     <footer
+      className="catafract-footer"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -26,6 +27,7 @@ export function Footer() {
       }}
     >
       <div
+        className="catafract-footer-logo"
         style={{
           color: "#FFFFFF",
           fontSize: 18,
@@ -37,8 +39,15 @@ export function Footer() {
       >
         CATAFRACT.COM
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
-        <a href="https://x.com/doasfrancisco" style={linkStyle}>
+      <div
+        className="catafract-footer-links"
+        style={{ display: "flex", alignItems: "center", gap: 32 }}
+      >
+        <a
+          href="https://x.com/doasfrancisco"
+          className="catafract-footer-link"
+          style={linkStyle}
+        >
           <svg
             width="18"
             height="18"
@@ -51,7 +60,11 @@ export function Footer() {
           </svg>
           Twitter
         </a>
-        <a href="https://github.com/doasfrancisco" style={linkStyle}>
+        <a
+          href="https://github.com/doasfrancisco"
+          className="catafract-footer-link"
+          style={linkStyle}
+        >
           <svg
             width="18"
             height="18"
@@ -64,7 +77,11 @@ export function Footer() {
           </svg>
           GitHub
         </a>
-        <a href="https://www.linkedin.com/in/cristhianagueroh/" style={linkStyle}>
+        <a
+          href="https://www.linkedin.com/in/cristhianagueroh/"
+          className="catafract-footer-link"
+          style={linkStyle}
+        >
           <svg
             width="18"
             height="18"
@@ -79,12 +96,14 @@ export function Footer() {
         </a>
       </div>
       <div
+        className="catafract-footer-commit"
         style={{
           color: "#555555",
           fontFamily: "var(--font-mono), monospace",
           fontSize: 12,
           lineHeight: "16px",
           paddingTop: 16,
+          textAlign: "center",
         }}
       >
         git commit -m &quot;built with love, shipping worldwide&quot;
