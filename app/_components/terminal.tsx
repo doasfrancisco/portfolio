@@ -1609,12 +1609,9 @@ function ImageModal({
               width: 32,
               height: 32,
               borderRadius: 16,
-              backgroundColor: "#0E0E10",
-              border: "1px solid #1C1C20",
-              color: "#888888",
-              fontSize: 13,
-              fontWeight: 500,
-              lineHeight: 1,
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #FFFFFF",
+              color: "#000000",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -1623,7 +1620,18 @@ function ImageModal({
               flexShrink: 0,
             }}
           >
-            ✕
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              stroke="#000000"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+            >
+              <line x1="2" y1="2" x2="12" y2="12" />
+              <line x1="12" y1="2" x2="2" y2="12" />
+            </svg>
           </button>
         </div>
         <div
