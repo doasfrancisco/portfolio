@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { DoctocGallery, ImageTile, MockupGallery, PulsoGallery } from "./mockups";
+import { DoctocGallery, ImageTile, PhoneTile, PulsoGallery } from "./mockups";
 import { useTab, type TabKey } from "./tab-context";
 import { COMMIT_BY_PROJECT } from "../_data/commits";
 
@@ -707,57 +707,22 @@ function Description({ children }: { children: ReactNode }) {
   );
 }
 
-function GallerySection({
-  theme,
-  firstTile,
+function MaxilarContent({
+  onImageClick,
 }: {
-  theme: Theme;
-  firstTile?: ReactNode;
+  onImageClick: (info: {
+    src: string;
+    alt: string;
+    label: string;
+    size: string;
+  }) => void;
 }) {
-  const progress = useTerminalProgress();
-  return (
-    <div
-      className="catafract-terminal-gallery-section"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        paddingTop: 4,
-      }}
-    >
-      <div style={{ paddingTop: 20 }}>
-        <Prompt cmd="imgcat screens/*.png" theme={theme} />
-      </div>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          visibility: progress >= 3 ? "visible" : "hidden",
-        }}
-      >
-        <MockupGallery firstTile={firstTile} />
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 14,
-            paddingTop: 14,
-          }}
-        >
-          <span
-            className="catafract-terminal-gallery-meta"
-            style={{ ...mono, color: "#555555", fontSize: 11, lineHeight: "14px" }}
-          >
-            8 files · 7.7mb · rendered in 0.04s
-          </span>
-        </div>
-        <Cursor theme={theme} />
-      </div>
-    </div>
-  );
-}
-
-function MaxilarContent() {
   const theme = THEMES.maxilar;
+  const shots: { num: string; filename: string; size: string; src: string; alt: string }[] = [
+    { num: "01", filename: "schedule.png", size: "0.5mb", src: "/maxilar-schedule.png", alt: "maxilar schedule — patient appointment agent view" },
+    { num: "02", filename: "payment.png", size: "0.5mb", src: "/maxilar-payment.png", alt: "maxilar payment — billing and receipts from the phone" },
+    { num: "03", filename: "reports.png", size: "0.2mb", src: "/maxilar-reports.png", alt: "maxilar reports — clinic performance at a glance" },
+  ];
   const progress = useTerminalProgress();
   return (
     <div
@@ -819,8 +784,64 @@ function MaxilarContent() {
           ]}
         />
       </div>
-      <div style={{ visibility: progress >= 2 ? "visible" : "hidden" }}>
-        <GallerySection theme={theme} />
+      <div
+        className="catafract-terminal-gallery-section"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          paddingTop: 4,
+          visibility: progress >= 2 ? "visible" : "hidden",
+        }}
+      >
+        <div style={{ paddingTop: 20 }}>
+          <Prompt cmd="imgcat screens/*.png" theme={theme} />
+        </div>
+        <div style={{ visibility: progress >= 3 ? "visible" : "hidden" }}>
+          <div
+            className="catafract-terminal-gallery"
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 18,
+              paddingTop: 6,
+            }}
+          >
+            {shots.map((s) => (
+              <PhoneTile
+                key={s.num}
+                num={s.num}
+                filename={s.filename}
+                size={s.size}
+                src={s.src}
+                alt={s.alt}
+                onClick={() =>
+                  onImageClick({
+                    src: s.src,
+                    alt: s.alt,
+                    label: `${s.num} / maxilar — ${s.filename}`,
+                    size: s.size,
+                  })
+                }
+              />
+            ))}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              paddingTop: 14,
+            }}
+          >
+            <span
+              className="catafract-terminal-gallery-meta"
+              style={{ ...mono, color: "#555555", fontSize: 11, lineHeight: "14px" }}
+            >
+              3 files · 1.2mb · rendered in 0.02s
+            </span>
+          </div>
+          <Cursor theme={theme} />
+        </div>
       </div>
       <div style={{ visibility: progress >= 3 ? "visible" : "hidden" }}>
         <FooterRow theme={theme} />
@@ -953,6 +974,13 @@ function SyntaxContent({
   }) => void;
 }) {
   const theme = THEMES.syntax;
+  const shots: { num: string; filename: string; size: string; src: string; alt: string }[] = [
+    { num: "01", filename: "login.png", size: "2.0mb", src: "/syntax-login.png", alt: "syntax login — aprende inglés hablando con ia" },
+    { num: "02", filename: "home.png", size: "0.9mb", src: "/syntax-home.png", alt: "syntax home — cursos con tópicos personalizados" },
+    { num: "03", filename: "lesson.png", size: "0.2mb", src: "/syntax-lesson.png", alt: "syntax lesson — feedback inmediato por cada oración" },
+    { num: "04", filename: "convo.png", size: "0.3mb", src: "/syntax-conversation.png", alt: "syntax conversation — real-time speaking practice with waveform" },
+    { num: "05", filename: "free-trial.png", size: "0.5mb", src: "/syntax-free-trial.png", alt: "syntax free trial — 3 lecciones gratis de regalo" },
+  ];
   const progress = useTerminalProgress();
   return (
     <div
@@ -1014,26 +1042,64 @@ function SyntaxContent({
           ]}
         />
       </div>
-      <div style={{ visibility: progress >= 2 ? "visible" : "hidden" }}>
-        <GallerySection
-          theme={theme}
-          firstTile={
-            <ImageTile
-              num="01"
-              filename="landing.png"
-              size="1.6mb"
-              src="/syntax-01.png"
-              onClick={() =>
-                onImageClick({
-                  src: "/syntax-01.png",
-                  alt: "syntax.catafract.com landing page",
-                  label: "01 / syntax — landing.png",
-                  size: "1.6mb",
-                })
-              }
-            />
-          }
-        />
+      <div
+        className="catafract-terminal-gallery-section"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          paddingTop: 4,
+          visibility: progress >= 2 ? "visible" : "hidden",
+        }}
+      >
+        <div style={{ paddingTop: 20 }}>
+          <Prompt cmd="imgcat screens/*.png" theme={theme} />
+        </div>
+        <div style={{ visibility: progress >= 3 ? "visible" : "hidden" }}>
+          <div
+            className="catafract-terminal-gallery"
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 18,
+              paddingTop: 6,
+            }}
+          >
+            {shots.map((s) => (
+              <PhoneTile
+                key={s.num}
+                num={s.num}
+                filename={s.filename}
+                size={s.size}
+                src={s.src}
+                alt={s.alt}
+                onClick={() =>
+                  onImageClick({
+                    src: s.src,
+                    alt: s.alt,
+                    label: `${s.num} / syntax — ${s.filename}`,
+                    size: s.size,
+                  })
+                }
+              />
+            ))}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              paddingTop: 14,
+            }}
+          >
+            <span
+              className="catafract-terminal-gallery-meta"
+              style={{ ...mono, color: "#555555", fontSize: 11, lineHeight: "14px" }}
+            >
+              5 files · 3.9mb · rendered in 0.03s
+            </span>
+          </div>
+          <Cursor theme={theme} />
+        </div>
       </div>
       <div style={{ visibility: progress >= 3 ? "visible" : "hidden" }}>
         <FooterRow theme={theme} />
@@ -1623,7 +1689,9 @@ export function Terminal() {
         }}
       >
         <TabBar activeTab={activeTab} onChange={setActiveTab} />
-        {activeTab === "maxilar" && <MaxilarContent />}
+        {activeTab === "maxilar" && (
+          <MaxilarContent onImageClick={(info) => setModal(info)} />
+        )}
         {activeTab === "pulso" && <PulsoContent />}
         {activeTab === "syntax" && (
           <SyntaxContent onImageClick={(info) => setModal(info)} />

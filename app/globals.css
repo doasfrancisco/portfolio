@@ -227,6 +227,27 @@ body {
     padding: 7px !important;
     overflow: hidden !important;
   }
+  .catafract-terminal-phone-tile {
+    width: calc(50% - 9px) !important;
+    min-width: 0 !important;
+    flex-shrink: 1 !important;
+    gap: 6px !important;
+  }
+  .catafract-terminal-phone-box {
+    width: 100% !important;
+    max-width: 150px !important;
+    height: auto !important;
+    aspect-ratio: 150 / 324 !important;
+    border-radius: 14px !important;
+  }
+  .catafract-terminal-phone-tile .catafract-terminal-tile-label-num,
+  .catafract-terminal-phone-tile .catafract-terminal-tile-label-name {
+    font-size: 10px !important;
+    line-height: 12px !important;
+  }
+  .catafract-terminal-phone-tile .catafract-terminal-tile-label-size {
+    display: none !important;
+  }
   .catafract-terminal-tile-label-num {
     font-size: 9px !important;
     line-height: 11px !important;

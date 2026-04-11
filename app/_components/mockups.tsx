@@ -676,6 +676,100 @@ export function ImageTile({
   );
 }
 
+export function PhoneTile({
+  num,
+  filename,
+  size,
+  src,
+  alt,
+  onClick,
+}: {
+  num: string;
+  filename: string;
+  size: string;
+  src: string;
+  alt: string;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      className="catafract-terminal-phone-tile"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 10,
+        width: 260,
+        flexShrink: 0,
+      }}
+    >
+      <button
+        onClick={onClick}
+        aria-label={`Open ${filename}`}
+        className="catafract-terminal-phone-box"
+        style={{
+          backgroundColor: "#0A1518",
+          border: "1px solid #1A3A3E",
+          borderRadius: 18,
+          width: 150,
+          height: 324,
+          padding: 0,
+          cursor: "zoom-in",
+          overflow: "hidden",
+          boxSizing: "border-box",
+          display: "block",
+        }}
+      >
+        <img
+          src={src}
+          alt={alt}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+      </button>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          width: 150,
+          paddingInline: 2,
+        }}
+      >
+        <div
+          className="catafract-terminal-tile-label-num"
+          style={{ ...mono, color: "#555555", fontSize: 10, lineHeight: "12px" }}
+        >
+          {num}
+        </div>
+        <div
+          className="catafract-terminal-tile-label-name"
+          style={{
+            ...mono,
+            color: "#CCCCCC",
+            fontSize: 11,
+            fontWeight: 600,
+            lineHeight: "14px",
+          }}
+        >
+          {filename}
+        </div>
+        <div style={{ flexGrow: 1 }} />
+        <div
+          className="catafract-terminal-tile-label-size"
+          style={{ ...mono, color: "#444444", fontSize: 10, lineHeight: "12px" }}
+        >
+          {size}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function MockupGallery({ firstTile }: { firstTile?: ReactNode }) {
   return (
     <div
