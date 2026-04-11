@@ -672,6 +672,23 @@ function Heading({ children }: { children: ReactNode }) {
   );
 }
 
+function ProjectLogo({ src, alt }: { src: string; alt: string }) {
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className="catafract-terminal-logo"
+      style={{
+        display: "block",
+        width: 120,
+        height: 120,
+        objectFit: "contain",
+        marginTop: 22,
+      }}
+    />
+  );
+}
+
 function Description({ children }: { children: ReactNode }) {
   return (
     <p
@@ -762,6 +779,7 @@ function MaxilarContent() {
           visibility: progress >= 1 ? "visible" : "hidden",
         }}
       >
+        <ProjectLogo src="/maxilar-logo.png" alt="Maxilar" />
         <Heading>AI agents for cool dentists.</Heading>
         <Description>
           Maxilar built AI agents that sit inside dental practices — handling
@@ -834,6 +852,7 @@ function PulsoContent() {
           visibility: progress >= 1 ? "visible" : "hidden",
         }}
       >
+        <ProjectLogo src="/pulso-logo.png" alt="Pulso" />
         <Heading>AI for occupational health.</Heading>
         <Description>
           Pulso Salud (Ana Prevention) is the occupational health platform used
@@ -955,6 +974,7 @@ function SyntaxContent({
           visibility: progress >= 1 ? "visible" : "hidden",
         }}
       >
+        <ProjectLogo src="/syntax-logo.png" alt="Syntax" />
         <Heading>English fluency from your phone.</Heading>
         <Description>
           Syntax is an AI English tutor for speakers of Spanish. Pick a topic,
@@ -1060,6 +1080,7 @@ function InmobaContent({
           visibility: progress >= 1 ? "visible" : "hidden",
         }}
       >
+        <ProjectLogo src="/inmoba-logo.png" alt="Inmoba" />
         <Heading>Property valuations in 60 seconds.</Heading>
         <Description>
           Inmoba prices any property in the Peruvian market in under a minute.
@@ -1202,6 +1223,7 @@ function DameloContent({
           visibility: progress >= 1 ? "visible" : "hidden",
         }}
       >
+        <ProjectLogo src="/damelo-logo.png" alt="Damelo" />
         <Heading>Share your AI sessions with your team.</Heading>
         <Description>
           Damelo is an MCP server that exports, imports, and browses Claude Code
@@ -1332,6 +1354,7 @@ function DoctocContent() {
           visibility: progress >= 1 ? "visible" : "hidden",
         }}
       >
+        <ProjectLogo src="/doctoc-logo.png" alt="Doctoc" />
         <Heading>HL7 FHIR compliance for Latin American EHRs.</Heading>
         <Description>
           After Maxilar was acquired, the same team rebuilt Doctoc&apos;s clinical

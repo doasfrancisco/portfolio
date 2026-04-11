@@ -151,6 +151,11 @@ body {
     font-size: 12px !important;
     line-height: 15px !important;
   }
+  .catafract-terminal-logo {
+    width: 80px !important;
+    height: 80px !important;
+    margin-top: 12px !important;
+  }
   .catafract-terminal-title {
     font-size: 26px !important;
     letter-spacing: -0.5px !important;
