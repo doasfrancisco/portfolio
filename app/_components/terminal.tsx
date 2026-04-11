@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { ImageTile, MockupGallery } from "./mockups";
+import { useTab, type TabKey } from "./tab-context";
+import { COMMIT_BY_PROJECT } from "../_data/commits";
 
 const mono: CSSProperties = { fontFamily: "var(--font-mono), monospace" };
 
-type TabKey = "maxilar" | "syntax" | "inmoba" | "damelo" | "doctoc";
-
 const TAB_ORDER: readonly TabKey[] = [
   "maxilar",
+  "pulso",
   "syntax",
   "inmoba",
   "damelo",
@@ -36,8 +37,19 @@ const THEMES: Record<TabKey, Theme> = {
     inactiveDot: "#1F4044",
     host: "catafract@maxilar",
     domain: "catafract.com",
-    commits: 182,
+    commits: COMMIT_BY_PROJECT.maxilar,
     status: { label: "● shipped", color: "#4EC86C" },
+  },
+  pulso: {
+    accent: "#F472B6",
+    activeBg: "#1F1018",
+    activeBadgeBg: "#0F0610",
+    activeBadgeBorder: "#5C1F3E",
+    inactiveDot: "#5C1F3E",
+    host: "catafract@pulso",
+    domain: "pulsosalud.com",
+    commits: COMMIT_BY_PROJECT.pulso,
+    status: { label: "● live", color: "#F472B6" },
   },
   syntax: {
     accent: "#A78BFA",
@@ -47,7 +59,7 @@ const THEMES: Record<TabKey, Theme> = {
     inactiveDot: "#3D2F5C",
     host: "catafract@syntax",
     domain: "syntax.catafract.com",
-    commits: 428,
+    commits: COMMIT_BY_PROJECT.syntax,
     status: { label: "● in stores", color: "#A78BFA" },
   },
   inmoba: {
@@ -58,7 +70,7 @@ const THEMES: Record<TabKey, Theme> = {
     inactiveDot: "#5C4316",
     host: "catafract@inmoba",
     domain: "inmoba.app",
-    commits: 94,
+    commits: COMMIT_BY_PROJECT.inmoba,
     status: { label: "● live", color: "#F59E0B" },
   },
   damelo: {
@@ -69,7 +81,7 @@ const THEMES: Record<TabKey, Theme> = {
     inactiveDot: "#333336",
     host: "catafract@d.sh",
     domain: "damelo.sh",
-    commits: 71,
+    commits: COMMIT_BY_PROJECT.damelo,
     status: { label: "● open source", color: "#A3A3A3" },
   },
   doctoc: {
@@ -80,7 +92,7 @@ const THEMES: Record<TabKey, Theme> = {
     inactiveDot: "#1F3A28",
     host: "catafract@doctoc",
     domain: "doctoc.health",
-    commits: 216,
+    commits: COMMIT_BY_PROJECT.doctoc,
     status: { label: "● fhir r4", color: "#4EC86C" },
   },
 };
@@ -441,6 +453,11 @@ function TabBar({
         onClick={() => onChange("maxilar")}
       />
       <TabButton
+        tab="pulso"
+        active={activeTab === "pulso"}
+        onClick={() => onChange("pulso")}
+      />
+      <TabButton
         tab="syntax"
         active={activeTab === "syntax"}
         onClick={() => onChange("syntax")}
@@ -591,6 +608,63 @@ function MaxilarContent() {
           {
             hash: "1c5ff20",
             msg: "chore: initial commit — one dentist, one agent, one dream",
+          },
+        ]}
+      />
+      <GallerySection theme={theme} />
+      <FooterRow theme={theme} />
+    </div>
+  );
+}
+
+function PulsoContent() {
+  const theme = THEMES.pulso;
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        paddingBlock: 28,
+        paddingInline: 32,
+      }}
+    >
+      <Prompt cmd="cat about.md" theme={theme} />
+      <Heading>AI for occupational health.</Heading>
+      <Description>
+        Pulso Salud (Ana Prevention) is the occupational health platform used
+        by clinics and companies across Peru to run pre-employment and periodic
+        exams, manage protocols, and keep workers safe. The team is rebuilding
+        it AI-native — smart intake, automated reports, and a new frontend
+        that replaces a legacy system that had been in production for years.
+      </Description>
+      <Metadata>
+        <MetaItem k="role" v="head of ai" />
+        <Pipe />
+        <MetaItem k="scope" v="new frontend · db · mcps" color="#F472B6" />
+        <Pipe />
+        <MetaItem k="status" v="live · shipping" color="#F472B6" />
+        <Pipe />
+        <MetaItem k="dates" v="jan 2026 — now" />
+      </Metadata>
+      <GitLog
+        theme={theme}
+        commits={[
+          {
+            hash: "c71a2f9",
+            msg: "feat: ship new frontend replacing the ap-legacy system",
+          },
+          {
+            hash: "b08e3d1",
+            msg: "feat: maria mcp agent for clinic workflows",
+          },
+          {
+            hash: "4f1c0a6",
+            msg: "feat: sap integration for pre-employment exam billing",
+          },
+          {
+            hash: "0d2b9c7",
+            msg: "chore: initial commit — ai-native rewrite kicks off",
           },
         ]}
       />
@@ -996,7 +1070,8 @@ function ImageModal({
 /* -------------------------------- root -------------------------------- */
 
 export function Terminal() {
-  const [activeTab, setActiveTab] = useState<TabKey>("maxilar");
+  const { activeTab, setActiveTab, registerTerminalRef } = useTab();
+  const ref = useRef<HTMLDivElement | null>(null);
   const [modal, setModal] = useState<{
     src: string;
     alt: string;
@@ -1004,9 +1079,15 @@ export function Terminal() {
     size: string;
   } | null>(null);
 
+  useEffect(() => {
+    registerTerminalRef(ref.current);
+    return () => registerTerminalRef(null);
+  }, [registerTerminalRef]);
+
   return (
     <>
       <div
+        ref={ref}
         style={{
           width: 1100,
           backgroundColor: "#0A0A0A",
@@ -1014,10 +1095,12 @@ export function Terminal() {
           borderRadius: 12,
           overflow: "hidden",
           boxSizing: "border-box",
+          scrollMarginTop: 24,
         }}
       >
         <TabBar activeTab={activeTab} onChange={setActiveTab} />
         {activeTab === "maxilar" && <MaxilarContent />}
+        {activeTab === "pulso" && <PulsoContent />}
         {activeTab === "syntax" && (
           <SyntaxContent onImageClick={(info) => setModal(info)} />
         )}

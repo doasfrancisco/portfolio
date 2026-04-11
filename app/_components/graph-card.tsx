@@ -1,100 +1,308 @@
-const empty: [number, number][] = [
-  [0, 0], [30, 0], [60, 0], [75, 0], [105, 0], [135, 0], [210, 0], [405, 0],
-  [465, 0], [495, 0], [525, 0], [555, 0], [570, 0], [600, 0], [615, 0], [765, 0],
-  [0, 15], [30, 15], [45, 15], [75, 15], [90, 15], [195, 15], [210, 15], [270, 15],
-  [285, 15], [345, 15], [390, 15], [405, 15], [480, 15], [495, 15], [540, 15],
-  [555, 15], [570, 15], [585, 15], [615, 15], [630, 15], [690, 15],
-  [0, 30], [15, 30], [30, 30], [45, 30], [75, 30], [150, 30], [195, 30], [360, 30],
-  [390, 30], [495, 30], [540, 30], [555, 30], [615, 30], [630, 30], [675, 30],
-  [705, 30], [720, 30], [750, 30], [765, 30],
-  [15, 45], [30, 45], [45, 45], [60, 45], [90, 45], [195, 45], [345, 45], [405, 45],
-  [480, 45], [525, 45], [540, 45], [555, 45], [585, 45], [600, 45], [645, 45],
-  [705, 45],
-  [0, 60], [90, 60], [105, 60], [120, 60], [135, 60], [165, 60], [270, 60], [435, 60],
-  [465, 60], [480, 60], [510, 60], [570, 60], [630, 60], [705, 60], [720, 60],
-  [0, 75], [15, 75], [30, 75], [60, 75], [150, 75], [165, 75], [195, 75], [225, 75],
-  [240, 75], [315, 75], [345, 75], [360, 75], [390, 75], [435, 75], [450, 75],
-  [465, 75], [525, 75], [570, 75], [615, 75], [630, 75], [645, 75], [690, 75],
-  [735, 75], [750, 75],
-  [0, 90], [15, 90], [30, 90], [45, 90], [75, 90], [90, 90], [105, 90], [150, 90],
-  [180, 90], [315, 90], [345, 90], [360, 90], [420, 90], [465, 90], [525, 90],
-  [540, 90], [555, 90], [585, 90], [630, 90], [720, 90],
+"use client";
+
+import { useMemo, useState, type CSSProperties } from "react";
+import { useTab, type TabKey, type YearKey } from "./tab-context";
+import {
+  COMMIT_BY_YEAR,
+  COMMIT_DAYS,
+  type ProjectKey,
+} from "../_data/commits";
+
+/* ----------------------------- config ----------------------------- */
+
+const CELL = 12;
+const STRIDE = 15;
+const COLS = 53;
+const ROWS = 7;
+const SVG_W = COLS * STRIDE - (STRIDE - CELL); // 792
+const SVG_H = ROWS * STRIDE - (STRIDE - CELL); // 102
+
+const PROJECT_COLORS: Record<ProjectKey, string> = {
+  maxilar: "#22D3EE",
+  pulso: "#F472B6",
+  syntax: "#A78BFA",
+  inmoba: "#F59E0B",
+  damelo: "#A3A3A3",
+  doctoc: "#4EC86C",
+};
+
+const PROJECT_LABEL: Record<ProjectKey, string> = {
+  maxilar: "maxilar",
+  pulso: "pulso",
+  syntax: "syntax",
+  inmoba: "inmoba",
+  damelo: "d.sh",
+  doctoc: "doctoc",
+};
+
+const YEAR_SUBTITLE: Record<YearKey, string> = {
+  "2026": "jan — dec 2026",
+  "2025": "jan — dec 2025",
+  "2024-2023": "2023 + 2024 · syntax era",
+};
+
+/* ----------------------------- helpers ----------------------------- */
+
+function parseDate(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function toIso(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
+const COMMITS_BY_DATE = new Map<string, Partial<Record<ProjectKey, number>>>();
+for (const day of COMMIT_DAYS) {
+  COMMITS_BY_DATE.set(day.date, day.byProject);
+}
+
+type YearBreakdown = {
+  year: number;
+  byProject: Partial<Record<ProjectKey, number>>;
+  total: number;
+};
+
+type CellInfo = {
+  date: string; // anchor-year date (YYYY-MM-DD)
+  col: number;
+  row: number;
+  byProject: Partial<Record<ProjectKey, number>>;
+  total: number;
+  dominant: ProjectKey | null;
+  // present only for the combined "2024-2023" view
+  yearBreakdown?: YearBreakdown[];
+};
+
+function computeDominantAndTotal(
+  byProject: Partial<Record<ProjectKey, number>>,
+): { total: number; dominant: ProjectKey | null } {
+  let total = 0;
+  let dominant: ProjectKey | null = null;
+  let domCount = -1;
+  for (const [p, c] of Object.entries(byProject) as [ProjectKey, number][]) {
+    total += c;
+    if (c > domCount) {
+      domCount = c;
+      dominant = p;
+    }
+  }
+  return { total, dominant };
+}
+
+function buildSingleYear(year: number): CellInfo[] {
+  const jan1 = new Date(year, 0, 1);
+  const startSun = new Date(jan1);
+  startSun.setDate(startSun.getDate() - startSun.getDay());
+
+  const cells: CellInfo[] = [];
+  for (let i = 0; i < COLS * ROWS; i++) {
+    const d = new Date(startSun);
+    d.setDate(d.getDate() + i);
+    const col = Math.floor(i / ROWS);
+    const row = i % ROWS;
+    const date = toIso(d);
+    const byProject = COMMITS_BY_DATE.get(date) ?? {};
+    const { total, dominant } = computeDominantAndTotal(byProject);
+    cells.push({ date, col, row, byProject, total, dominant });
+  }
+  return cells;
+}
+
+function buildCombined(anchorYear: number, otherYear: number): CellInfo[] {
+  const jan1 = new Date(anchorYear, 0, 1);
+  const startSun = new Date(jan1);
+  startSun.setDate(startSun.getDate() - startSun.getDay());
+
+  const cells: CellInfo[] = [];
+  for (let i = 0; i < COLS * ROWS; i++) {
+    const d = new Date(startSun);
+    d.setDate(d.getDate() + i);
+    const col = Math.floor(i / ROWS);
+    const row = i % ROWS;
+    const dateAnchor = toIso(d);
+    const mmdd = dateAnchor.slice(5);
+    const dateOther = `${otherYear}-${mmdd}`;
+
+    const anchorData = COMMITS_BY_DATE.get(dateAnchor) ?? {};
+    const otherData = COMMITS_BY_DATE.get(dateOther) ?? {};
+
+    const merged: Partial<Record<ProjectKey, number>> = {};
+    for (const [p, c] of Object.entries(anchorData) as [ProjectKey, number][]) {
+      merged[p] = (merged[p] ?? 0) + c;
+    }
+    for (const [p, c] of Object.entries(otherData) as [ProjectKey, number][]) {
+      merged[p] = (merged[p] ?? 0) + c;
+    }
+
+    const { total, dominant } = computeDominantAndTotal(merged);
+
+    const anchorTotal = Object.values(anchorData).reduce(
+      (s, v) => s + (v ?? 0),
+      0,
+    );
+    const otherTotal = Object.values(otherData).reduce(
+      (s, v) => s + (v ?? 0),
+      0,
+    );
+
+    const yearBreakdown: YearBreakdown[] = [];
+    if (anchorTotal > 0) {
+      yearBreakdown.push({
+        year: anchorYear,
+        byProject: anchorData,
+        total: anchorTotal,
+      });
+    }
+    if (otherTotal > 0) {
+      yearBreakdown.push({
+        year: otherYear,
+        byProject: otherData,
+        total: otherTotal,
+      });
+    }
+
+    cells.push({
+      date: dateAnchor,
+      col,
+      row,
+      byProject: merged,
+      total,
+      dominant,
+      yearBreakdown: yearBreakdown.length > 0 ? yearBreakdown : undefined,
+    });
+  }
+  return cells;
+}
+
+function buildCells(year: YearKey): CellInfo[] {
+  if (year === "2026") return buildSingleYear(2026);
+  if (year === "2025") return buildSingleYear(2025);
+  return buildCombined(2024, 2023);
+}
+
+function cellOpacity(total: number): number {
+  if (total <= 0) return 1;
+  if (total <= 2) return 0.38;
+  if (total <= 5) return 0.58;
+  if (total <= 9) return 0.78;
+  return 1;
+}
+
+function formatDateShort(iso: string, withDow: boolean, withYear: boolean): string {
+  const d = parseDate(iso);
+  const opts: Intl.DateTimeFormatOptions = {
+    month: "short",
+    day: "numeric",
+  };
+  if (withDow) opts.weekday = "short";
+  if (withYear) opts.year = "numeric";
+  return d.toLocaleDateString("en-US", opts);
+}
+
+/* ----------------------------- ui bits ----------------------------- */
+
+const months = [
+  { name: "Jan", g: 5 },
+  { name: "Feb", g: 4 },
+  { name: "Mar", g: 4 },
+  { name: "Apr", g: 5 },
+  { name: "May", g: 4 },
+  { name: "Jun", g: 5 },
+  { name: "Jul", g: 4 },
+  { name: "Aug", g: 5 },
+  { name: "Sep", g: 4 },
+  { name: "Oct", g: 5 },
+  { name: "Nov", g: 4 },
+  { name: "Dec", g: 4 },
 ];
 
-const maxilar: [number, number][] = [
-  [15, 0], [45, 0], [90, 0], [120, 0], [150, 0], [165, 0], [180, 0], [195, 0],
-  [225, 0], [240, 0], [255, 0], [270, 0], [285, 0], [300, 0], [315, 0], [330, 0],
-  [345, 0], [360, 0], [375, 0], [390, 0], [420, 0], [435, 0], [450, 0], [480, 0],
-  [510, 0], [540, 0], [585, 0],
-  [15, 15], [60, 15], [105, 15], [120, 15], [135, 15], [150, 15], [165, 15],
-  [180, 15], [225, 15], [240, 15], [255, 15], [300, 15], [315, 15], [330, 15],
-  [360, 15], [375, 15], [420, 15], [435, 15], [450, 15], [465, 15], [510, 15],
-  [525, 15], [600, 15],
-  [60, 30], [90, 30], [105, 30], [120, 30], [135, 30], [165, 30], [180, 30],
-  [210, 30], [225, 30], [240, 30], [255, 30], [270, 30], [285, 30], [300, 30],
-  [315, 30], [330, 30], [345, 30], [375, 30], [405, 30], [420, 30], [435, 30],
-  [450, 30], [465, 30], [480, 30], [510, 30], [525, 30], [570, 30],
-  [0, 45], [75, 45], [105, 45], [120, 45], [135, 45], [150, 45], [165, 45], [180, 45],
-  [210, 45], [225, 45], [240, 45], [255, 45], [270, 45], [285, 45], [300, 45],
-  [315, 45], [330, 45], [360, 45], [375, 45], [390, 45], [420, 45], [435, 45],
-  [450, 45], [465, 45], [495, 45], [510, 45], [570, 45],
-  [15, 60], [30, 60], [45, 60], [60, 60], [75, 60], [150, 60], [180, 60], [195, 60],
-  [210, 60], [225, 60], [240, 60], [255, 60], [285, 60], [300, 60], [315, 60],
-  [330, 60], [345, 60], [360, 60], [375, 60], [390, 60], [405, 60], [420, 60],
-  [450, 60], [495, 60], [525, 60], [540, 60], [555, 60], [585, 60],
-  [45, 75], [75, 75], [90, 75], [105, 75], [120, 75], [135, 75], [180, 75], [210, 75],
-  [255, 75], [270, 75], [285, 75], [300, 75], [330, 75], [375, 75], [405, 75],
-  [420, 75], [480, 75], [495, 75], [510, 75], [540, 75], [555, 75], [600, 75],
-  [60, 90], [120, 90], [135, 90], [165, 90], [195, 90], [210, 90], [225, 90],
-  [240, 90], [255, 90], [270, 90], [285, 90], [300, 90], [330, 90], [375, 90],
-  [390, 90], [405, 90], [435, 90], [450, 90], [480, 90], [495, 90], [510, 90],
-  [570, 90], [615, 90],
-];
+const dayLabelColStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 3,
+  paddingTop: 22,
+  width: 28,
+};
 
-const inmoba: [number, number][] = [
-  [630, 0], [645, 0], [660, 0], [675, 0], [690, 0], [705, 0], [720, 0], [735, 0],
-  [750, 0],
-  [645, 15], [660, 15], [675, 15], [705, 15], [720, 15], [735, 15], [750, 15],
-  [765, 15],
-  [585, 30], [600, 30], [645, 30], [660, 30], [690, 30], [735, 30],
-  [615, 45], [630, 45], [660, 45], [675, 45], [690, 45], [720, 45], [735, 45],
-  [750, 45], [765, 45],
-  [600, 60], [615, 60], [645, 60], [660, 60], [675, 60], [690, 60], [735, 60],
-  [750, 60], [765, 60],
-  [585, 75], [660, 75], [675, 75], [705, 75], [720, 75], [765, 75],
-  [600, 90], [645, 90], [660, 90], [675, 90], [690, 90], [705, 90], [735, 90],
-  [750, 90], [765, 90],
-];
+const dayLabelRow = {
+  color: "#555555",
+  fontSize: 10,
+  lineHeight: "12px",
+  height: 12,
+} as const;
 
-function Cells({ color, data }: { color: string; data: [number, number][] }) {
+type YearButtonProps = {
+  year: YearKey;
+  active: boolean;
+  count: number;
+  onClick: () => void;
+};
+
+function YearButton({ year, active, count, onClick }: YearButtonProps) {
   return (
-    <g fill={color}>
-      {data.map(([x, y]) => (
-        <rect key={`${color}-${x}-${y}`} x={x} y={y} width={12} height={12} rx={2} />
-      ))}
-    </g>
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        all: "unset",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 2,
+        backgroundColor: active ? "#FFFFFF" : "transparent",
+        borderRadius: 8,
+        paddingBlock: 10,
+        paddingInline: 18,
+        width: 148,
+        boxSizing: "border-box",
+        cursor: "pointer",
+        transition: "background-color 120ms ease",
+      }}
+    >
+      <div
+        style={{
+          color: active ? "#000000" : "#888888",
+          fontSize: 13,
+          fontWeight: 600,
+          lineHeight: "16px",
+        }}
+      >
+        {year}
+      </div>
+      <div
+        style={{
+          color: active ? "#555555" : "#444444",
+          fontFamily: "var(--font-mono), monospace",
+          fontSize: 10,
+          lineHeight: "12px",
+        }}
+      >
+        {count.toLocaleString()} commits
+      </div>
+    </button>
   );
 }
 
-const months = [
-  { name: "Apr", g: 5 }, { name: "May", g: 4 }, { name: "Jun", g: 4 },
-  { name: "Jul", g: 4 }, { name: "Aug", g: 5 }, { name: "Sep", g: 4 },
-  { name: "Oct", g: 4 }, { name: "Nov", g: 5 }, { name: "Dec", g: 4 },
-  { name: "Jan", g: 4 }, { name: "Feb", g: 5 }, { name: "Mar", g: 4 },
-];
-
-const yearRow = {
-  color: "#666666",
-  fontSize: 13,
-  fontWeight: 500,
-  lineHeight: "16px",
-  width: 148,
-  paddingBlock: 10,
-  paddingInline: 18,
-  boxSizing: "border-box",
-} as const;
+/* ----------------------------- main ----------------------------- */
 
 export function GraphCard() {
+  const { activeYear, setActiveYear, focusTerminal } = useTab();
+  const [hovered, setHovered] = useState<CellInfo | null>(null);
+
+  const cells = useMemo(() => buildCells(activeYear), [activeYear]);
+  const yearCount = COMMIT_BY_YEAR[activeYear] ?? 0;
+  const isCombined = activeYear === "2024-2023";
+
+  function handleClickCell(cell: CellInfo) {
+    if (cell.dominant) {
+      focusTerminal(cell.dominant as TabKey);
+    }
+  }
+
   return (
     <div
       style={{
@@ -108,6 +316,7 @@ export function GraphCard() {
         flexDirection: "column",
         gap: 20,
         boxSizing: "border-box",
+        position: "relative",
       }}
     >
       <div
@@ -126,7 +335,10 @@ export function GraphCard() {
               lineHeight: "18px",
             }}
           >
-            412 contributions in the last year
+            {yearCount.toLocaleString()} contributions ·{" "}
+            <span style={{ color: "#888888", fontWeight: 500 }}>
+              {YEAR_SUBTITLE[activeYear]}
+            </span>
           </div>
           <div
             style={{
@@ -150,53 +362,25 @@ export function GraphCard() {
         }}
       >
         <div style={{ display: "flex", gap: 8 }}>
+          <div style={dayLabelColStyle}>
+            <div style={{ height: 12 }} />
+            <div style={dayLabelRow}>Mon</div>
+            <div style={{ height: 12 }} />
+            <div style={dayLabelRow}>Wed</div>
+            <div style={{ height: 12 }} />
+            <div style={dayLabelRow}>Fri</div>
+            <div style={{ height: 12 }} />
+          </div>
+
           <div
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: 3,
-              paddingTop: 22,
-              width: 28,
+              gap: 6,
+              position: "relative",
             }}
           >
-            <div style={{ height: 12 }} />
-            <div
-              style={{
-                color: "#555555",
-                fontSize: 10,
-                lineHeight: "12px",
-                height: 12,
-              }}
-            >
-              Mon
-            </div>
-            <div style={{ height: 12 }} />
-            <div
-              style={{
-                color: "#555555",
-                fontSize: 10,
-                lineHeight: "12px",
-                height: 12,
-              }}
-            >
-              Wed
-            </div>
-            <div style={{ height: 12 }} />
-            <div
-              style={{
-                color: "#555555",
-                fontSize: 10,
-                lineHeight: "12px",
-                height: 12,
-              }}
-            >
-              Fri
-            </div>
-            <div style={{ height: 12 }} />
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ display: "flex", height: 16, width: 777 }}>
+            <div style={{ display: "flex", height: 16, width: SVG_W }}>
               {months.map((m) => (
                 <div
                   key={m.name}
@@ -214,43 +398,60 @@ export function GraphCard() {
             </div>
 
             <svg
-              width="777"
-              height="102"
-              viewBox="0 0 777 102"
+              width={SVG_W}
+              height={SVG_H}
+              viewBox={`0 0 ${SVG_W} ${SVG_H}`}
               xmlns="http://www.w3.org/2000/svg"
               style={{ flexShrink: 0 }}
+              onMouseLeave={() => setHovered(null)}
             >
-              <Cells color="#141414" data={empty} />
-              <Cells color="#22D3EE" data={maxilar} />
-              <Cells color="#F59E0B" data={inmoba} />
+              {cells.map((cell) => {
+                const x = cell.col * STRIDE;
+                const y = cell.row * STRIDE;
+                const isEmpty = cell.total === 0;
+                const fill = isEmpty
+                  ? "#141414"
+                  : PROJECT_COLORS[cell.dominant as ProjectKey];
+                const opacity = cellOpacity(cell.total);
+                const clickable = !isEmpty;
+                return (
+                  <rect
+                    key={cell.date}
+                    x={x}
+                    y={y}
+                    width={CELL}
+                    height={CELL}
+                    rx={2}
+                    fill={fill}
+                    fillOpacity={opacity}
+                    style={{ cursor: clickable ? "pointer" : "default" }}
+                    onMouseEnter={() => setHovered(cell)}
+                    onClick={() => handleClickCell(cell)}
+                  />
+                );
+              })}
             </svg>
+
+            {hovered && hovered.total > 0 && (
+              <Tooltip
+                cell={hovered}
+                containerWidth={SVG_W}
+                isCombined={isCombined}
+              />
+            )}
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <div
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: 8,
-              paddingBlock: 10,
-              paddingInline: 18,
-              width: 148,
-              boxSizing: "border-box",
-            }}
-          >
-            <div
-              style={{
-                color: "#000000",
-                fontSize: 13,
-                fontWeight: 600,
-                lineHeight: "16px",
-              }}
-            >
-              2026
-            </div>
-          </div>
-          <div style={yearRow}>2025</div>
-          <div style={yearRow}>2024-2023</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {(["2026", "2025", "2024-2023"] as YearKey[]).map((y) => (
+            <YearButton
+              key={y}
+              year={y}
+              active={activeYear === y}
+              count={COMMIT_BY_YEAR[y] ?? 0}
+              onClick={() => setActiveYear(y)}
+            />
+          ))}
         </div>
       </div>
 
@@ -264,23 +465,25 @@ export function GraphCard() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          {[
-            { c: "#22D3EE", l: "maxilar" },
-            { c: "#A78BFA", l: "syntax" },
-            { c: "#F59E0B", l: "inmoba" },
-            { c: "#A3A3A3", l: "d.sh" },
-            { c: "#4EC86C", l: "doctoc" },
-          ].map(({ c, l }) => (
-            <div
-              key={l}
-              style={{ display: "flex", alignItems: "center", gap: 6 }}
+          {(Object.keys(PROJECT_COLORS) as ProjectKey[]).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => focusTerminal(p as TabKey)}
+              style={{
+                all: "unset",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                cursor: "pointer",
+              }}
             >
               <div
                 style={{
                   width: 10,
                   height: 10,
                   borderRadius: 2,
-                  backgroundColor: c,
+                  backgroundColor: PROJECT_COLORS[p],
                 }}
               />
               <div
@@ -291,12 +494,233 @@ export function GraphCard() {
                   lineHeight: "16px",
                 }}
               >
-                {l}
+                {PROJECT_LABEL[p]}
               </div>
-            </div>
+            </button>
           ))}
+        </div>
+        <div
+          style={{
+            color: "#555555",
+            fontFamily: "var(--font-mono), monospace",
+            fontSize: 11,
+            lineHeight: "14px",
+          }}
+        >
+          click any cell to jump to the project
         </div>
       </div>
     </div>
+  );
+}
+
+/* ----------------------------- tooltip ----------------------------- */
+
+function Tooltip({
+  cell,
+  containerWidth,
+  isCombined,
+}: {
+  cell: CellInfo;
+  containerWidth: number;
+  isCombined: boolean;
+}) {
+  const xCenter = cell.col * STRIDE + CELL / 2;
+  const yTop = cell.row * STRIDE;
+  const yBottom = yTop + CELL;
+  const estWidth = 240;
+  const leftRaw = xCenter - estWidth / 2;
+  const left = Math.max(0, Math.min(containerWidth - estWidth, leftRaw));
+  const placeBelow = cell.row <= 2;
+  const top = placeBelow ? yBottom + 10 : yTop - 10;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left,
+        top,
+        transform: placeBelow ? "translateY(0)" : "translateY(-100%)",
+        backgroundColor: "#050507",
+        border: "1px solid #1C1C20",
+        borderRadius: 8,
+        padding: "10px 12px",
+        minWidth: estWidth,
+        pointerEvents: "none",
+        zIndex: 20,
+        boxShadow: "0 10px 24px rgba(0,0,0,0.5)",
+      }}
+    >
+      {isCombined ? (
+        <CombinedTooltipBody cell={cell} />
+      ) : (
+        <SingleTooltipBody cell={cell} />
+      )}
+      <div
+        style={{
+          marginTop: 8,
+          paddingTop: 8,
+          borderTop: "1px solid #1C1C20",
+          color: "#444444",
+          fontFamily: "var(--font-mono), monospace",
+          fontSize: 10,
+          lineHeight: "12px",
+        }}
+      >
+        click to open tab
+      </div>
+    </div>
+  );
+}
+
+function HeaderRow({ left, right }: { left: string; right: string }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+      }}
+    >
+      <div
+        style={{
+          color: "#CCCCCC",
+          fontFamily: "var(--font-mono), monospace",
+          fontSize: 11,
+          lineHeight: "14px",
+        }}
+      >
+        {left}
+      </div>
+      <div
+        style={{
+          color: "#888888",
+          fontFamily: "var(--font-mono), monospace",
+          fontSize: 11,
+          lineHeight: "14px",
+        }}
+      >
+        {right}
+      </div>
+    </div>
+  );
+}
+
+function ProjectLine({ p, count }: { p: ProjectKey; count: number }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: 2,
+            backgroundColor: PROJECT_COLORS[p],
+          }}
+        />
+        <div
+          style={{
+            color: "#E5E5E5",
+            fontFamily: "var(--font-mono), monospace",
+            fontSize: 11,
+            lineHeight: "14px",
+          }}
+        >
+          {PROJECT_LABEL[p]}
+        </div>
+      </div>
+      <div
+        style={{
+          color: "#888888",
+          fontFamily: "var(--font-mono), monospace",
+          fontSize: 11,
+          lineHeight: "14px",
+        }}
+      >
+        {count}
+      </div>
+    </div>
+  );
+}
+
+function SingleTooltipBody({ cell }: { cell: CellInfo }) {
+  const entries = Object.entries(cell.byProject) as [ProjectKey, number][];
+  entries.sort((a, b) => b[1] - a[1]);
+  return (
+    <>
+      <HeaderRow
+        left={formatDateShort(cell.date, true, true)}
+        right={`${cell.total} ${cell.total === 1 ? "commit" : "commits"}`}
+      />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 3,
+          marginTop: 6,
+        }}
+      >
+        {entries.map(([p, c]) => (
+          <ProjectLine key={p} p={p} count={c} />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function CombinedTooltipBody({ cell }: { cell: CellInfo }) {
+  const breakdown = cell.yearBreakdown ?? [];
+  return (
+    <>
+      <HeaderRow
+        left={formatDateShort(cell.date, false, false)}
+        right={`${cell.total} ${cell.total === 1 ? "commit" : "commits"}`}
+      />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          marginTop: 8,
+        }}
+      >
+        {breakdown.map((yr) => {
+          const entries = Object.entries(yr.byProject) as [
+            ProjectKey,
+            number,
+          ][];
+          entries.sort((a, b) => b[1] - a[1]);
+          return (
+            <div
+              key={yr.year}
+              style={{ display: "flex", flexDirection: "column", gap: 3 }}
+            >
+              <div
+                style={{
+                  color: "#666666",
+                  fontFamily: "var(--font-mono), monospace",
+                  fontSize: 10,
+                  lineHeight: "12px",
+                  letterSpacing: "0.2px",
+                }}
+              >
+                {yr.year}
+              </div>
+              {entries.map(([p, c]) => (
+                <ProjectLine key={p} p={p} count={c} />
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }

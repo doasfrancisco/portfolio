@@ -59,7 +59,9 @@ export function Hero() {
         more right now. Each color below is a project we&apos;re commiting to.
       </p>
       <a
-        href="#contact"
+        href="https://wa.me/51960400734?text=Catafract%20hi!"
+        target="_blank"
+        rel="noopener noreferrer"
         style={{
           display: "inline-flex",
           alignItems: "center",
