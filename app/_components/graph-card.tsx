@@ -527,12 +527,10 @@ function Tooltip({
 }) {
   const xCenter = cell.col * STRIDE + CELL / 2;
   const yTop = cell.row * STRIDE;
-  const yBottom = yTop + CELL;
   const estWidth = 240;
   const leftRaw = xCenter - estWidth / 2;
   const left = Math.max(0, Math.min(containerWidth - estWidth, leftRaw));
-  const placeBelow = cell.row <= 2;
-  const top = placeBelow ? yBottom + 10 : yTop - 10;
+  const top = yTop - 10;
 
   return (
     <div
@@ -540,7 +538,7 @@ function Tooltip({
         position: "absolute",
         left,
         top,
-        transform: placeBelow ? "translateY(0)" : "translateY(-100%)",
+        transform: "translateY(-100%)",
         backgroundColor: "#050507",
         border: "1px solid #1C1C20",
         borderRadius: 8,
