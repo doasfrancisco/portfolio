@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { ImageTile, MockupGallery } from "./mockups";
+import { DoctocGallery, ImageTile, MockupGallery, PulsoGallery } from "./mockups";
 import { useTab, type TabKey } from "./tab-context";
 import { COMMIT_BY_PROJECT } from "../_data/commits";
 
@@ -102,11 +102,18 @@ const THEMES: Record<TabKey, Theme> = {
 const TYPED_PROMPTS = new Set<string>();
 const SEQUENCE_LISTENERS = new Set<() => void>();
 
-const CMD_ORDER: readonly string[] = [
-  "cat about.md",
-  "git log --oneline -4",
-  "imgcat screens/*.png",
-];
+const DEFAULT_THIRD_PROMPT = "imgcat screens/*.png";
+
+const THIRD_PROMPT_BY_TAB: Partial<Record<TabKey, string>> = {
+  doctoc: "ls fhir/ && bat *.json",
+  pulso: "ls data/ # no ui yet — just the guts",
+};
+
+function cmdOrderFor(tab: string): readonly string[] {
+  const third =
+    THIRD_PROMPT_BY_TAB[tab as TabKey] ?? DEFAULT_THIRD_PROMPT;
+  return ["cat about.md", "git log --oneline -4", third] as const;
+}
 
 function markTyped(id: string) {
   TYPED_PROMPTS.add(id);
@@ -114,8 +121,9 @@ function markTyped(id: string) {
 }
 
 function getProgress(tab: string): number {
+  const order = cmdOrderFor(tab);
   let n = 0;
-  for (const cmd of CMD_ORDER) {
+  for (const cmd of order) {
     if (TYPED_PROMPTS.has(`${tab}:${cmd}`)) n += 1;
     else break;
   }
@@ -157,9 +165,10 @@ function Prompt({ cmd, theme }: { cmd: string; theme: Theme }) {
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     const priorDone = () => {
-      const slot = CMD_ORDER.indexOf(cmd);
+      const order = cmdOrderFor(activeTab);
+      const slot = order.indexOf(cmd);
       if (slot <= 0) return true;
-      return TYPED_PROMPTS.has(`${activeTab}:${CMD_ORDER[slot - 1]}`);
+      return TYPED_PROMPTS.has(`${activeTab}:${order[slot - 1]}`);
     };
 
     const tryStart = () => {
@@ -865,7 +874,47 @@ function PulsoContent() {
         />
       </div>
       <div style={{ visibility: progress >= 2 ? "visible" : "hidden" }}>
-        <GallerySection theme={theme} />
+        <div
+          className="catafract-terminal-gallery-section"
+          style={{ display: "flex", flexDirection: "column", paddingTop: 4 }}
+        >
+          <div style={{ paddingTop: 20 }}>
+            <Prompt
+              cmd="ls data/ # no ui yet — just the guts"
+              theme={theme}
+            />
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              visibility: progress >= 3 ? "visible" : "hidden",
+            }}
+          >
+            <PulsoGallery />
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                paddingTop: 14,
+              }}
+            >
+              <span
+                className="catafract-terminal-gallery-meta"
+                style={{
+                  ...mono,
+                  color: "#555555",
+                  fontSize: 11,
+                  lineHeight: "14px",
+                }}
+              >
+                8 files · 205kb · no ui (yet)
+              </span>
+            </div>
+            <Cursor theme={theme} />
+          </div>
+        </div>
       </div>
       <div style={{ visibility: progress >= 3 ? "visible" : "hidden" }}>
         <FooterRow theme={theme} />
@@ -1324,7 +1373,44 @@ function DoctocContent() {
         />
       </div>
       <div style={{ visibility: progress >= 2 ? "visible" : "hidden" }}>
-        <GallerySection theme={theme} />
+        <div
+          className="catafract-terminal-gallery-section"
+          style={{ display: "flex", flexDirection: "column", paddingTop: 4 }}
+        >
+          <div style={{ paddingTop: 20 }}>
+            <Prompt cmd="ls fhir/ && bat *.json" theme={theme} />
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              visibility: progress >= 3 ? "visible" : "hidden",
+            }}
+          >
+            <DoctocGallery />
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                paddingTop: 14,
+              }}
+            >
+              <span
+                className="catafract-terminal-gallery-meta"
+                style={{
+                  ...mono,
+                  color: "#555555",
+                  fontSize: 11,
+                  lineHeight: "14px",
+                }}
+              >
+                8 files · 12.3kb · rendered in 0.04s
+              </span>
+            </div>
+            <Cursor theme={theme} />
+          </div>
+        </div>
       </div>
       <div style={{ visibility: progress >= 3 ? "visible" : "hidden" }}>
         <FooterRow theme={theme} />
