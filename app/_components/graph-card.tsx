@@ -840,10 +840,18 @@ function GraphCardMobile() {
         padding: 18,
         display: "flex",
         flexDirection: "column",
+        alignItems: "center",
         gap: 14,
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          gap: 4,
+        }}
+      >
         <div
           style={{
             color: "#FFFFFF",
@@ -866,7 +874,15 @@ function GraphCardMobile() {
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          gap: 6,
+        }}
+      >
         {YEAR_OPTIONS.map((y) => {
           const active = activeYear === y.key;
           return (
@@ -894,7 +910,14 @@ function GraphCardMobile() {
         })}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          width: 201,
+          gap: 6,
+        }}
+      >
         <div
           style={{
             display: "flex",
@@ -958,7 +981,10 @@ function GraphCardMobile() {
       <div
         style={{
           display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           flexWrap: "wrap",
+          width: 276,
           gap: "10px 14px",
           borderTop: "1px solid #1A1A1A",
           paddingTop: 14,

@@ -145,9 +145,12 @@ body {
     padding-top: 6px !important;
   }
   .catafract-terminal-meta {
-    gap: 10px 18px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
     padding-top: 16px !important;
   }
+  .catafract-terminal-meta-pipe { display: none !important; }
   .catafract-terminal-meta-key {
     font-size: 10px !important;
     line-height: 13px !important;

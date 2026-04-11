@@ -195,7 +195,10 @@ function MetaItem({
 
 function Pipe() {
   return (
-    <span style={{ ...mono, color: "#1A1A1A", fontSize: 12, lineHeight: "16px" }}>
+    <span
+      className="catafract-terminal-meta-pipe"
+      style={{ ...mono, color: "#1A1A1A", fontSize: 12, lineHeight: "16px" }}
+    >
       |
     </span>
   );
